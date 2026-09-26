@@ -100,7 +100,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.6")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.7")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -494,7 +494,7 @@ with tab4:
         f"🟢 LOW ({len(low_list)})",
     ])
 
-    def render_anomaly_cards_with_resolution(anomaly_group: List[AnomalyFinding]):
+    def render_anomaly_cards_with_resolution(anomaly_group: List[AnomalyFinding], tab_prefix: str = "all"):
         if not anomaly_group:
             st.info("No anomalies in this severity category.")
             return
@@ -523,7 +523,7 @@ with tab4:
 
                 st.markdown(f"💡 **CA Audit Recommendation:** {aud_rec}")
                 
-                # HUMAN CA AUDITOR VARIANCE CORRECTION FORM
+                # HUMAN CA AUDITOR VARIANCE CORRECTION FORM WITH TAB UNIQUE KEYS
                 st.markdown("---")
                 st.markdown(f"##### 🛠️ Human CA Auditor Variance Resolution Form (ID: `{a.anomaly_id}`)")
                 
@@ -531,7 +531,8 @@ with tab4:
                     st.success(f"✅ Variance Corrected: **{astatus}** | Signed by: `{getattr(a, 'resolved_by', 'CA Auditor')}` at `{getattr(a, 'resolved_timestamp', '')[:19]}`")
                     st.markdown(f"**Auditor Notes:** {getattr(a, 'auditor_resolution_notes', '')}")
 
-                with st.form(key=f"res_form_{a.anomaly_id}"):
+                unique_form_key = f"res_form_{tab_prefix}_{a.anomaly_id}"
+                with st.form(key=unique_form_key):
                     f_col1, f_col2 = st.columns(2)
                     with f_col1:
                         action_choice = st.selectbox(
@@ -543,11 +544,11 @@ with tab4:
                                 "RESOLVED_COMMERCIAL_EXPEDIENCY",
                                 "REPORTED_TO_FIU_STR"
                             ],
-                            key=f"act_{a.anomaly_id}"
+                            key=f"act_{tab_prefix}_{a.anomaly_id}"
                         )
-                        auditor_name_input = st.text_input("Auditor / CA Name", "CA Statutory Auditor", key=f"aud_{a.anomaly_id}")
+                        auditor_name_input = st.text_input("Auditor / CA Name", "CA Statutory Auditor", key=f"aud_{tab_prefix}_{a.anomaly_id}")
                     with f_col2:
-                        notes_input = st.text_area("Auditor Resolution Notes & Form 3CD Clause References", "Rectified variance u/s 40A(3) / GST Sec 16(2).", key=f"not_{a.anomaly_id}")
+                        notes_input = st.text_area("Auditor Resolution Notes & Form 3CD Clause References", "Rectified variance u/s 40A(3) / GST Sec 16(2).", key=f"not_{tab_prefix}_{a.anomaly_id}")
                     
                     submit_res = st.form_submit_button("✍️ Apply CA Audit Correction & Sign SHA3-256 Ledger")
                     if submit_res:
@@ -564,15 +565,15 @@ with tab4:
                             st.rerun()
 
     with s_tab1:
-        render_anomaly_cards_with_resolution(anomalies)
+        render_anomaly_cards_with_resolution(anomalies, tab_prefix="all")
     with s_tab2:
-        render_anomaly_cards_with_resolution(crit_list)
+        render_anomaly_cards_with_resolution(crit_list, tab_prefix="crit")
     with s_tab3:
-        render_anomaly_cards_with_resolution(high_list)
+        render_anomaly_cards_with_resolution(high_list, tab_prefix="high")
     with s_tab4:
-        render_anomaly_cards_with_resolution(med_list)
+        render_anomaly_cards_with_resolution(med_list, tab_prefix="med")
     with s_tab5:
-        render_anomaly_cards_with_resolution(low_list)
+        render_anomaly_cards_with_resolution(low_list, tab_prefix="low")
 
     st.markdown("---")
     st.subheader("🔄 Detected Circular Transaction Loops")

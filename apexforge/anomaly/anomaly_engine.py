@@ -1,7 +1,8 @@
 """
 Section 7: Dedicated Forensic Anomaly Engine
 Combines deterministic forensic rules, statistical machine learning (Isolation Forest),
-and graph topological features to detect 12 categories of financial anomalies with explainable scoring.
+and graph topological features to detect 12 categories of financial anomalies with explainable scoring,
+severity level segregation, and detailed deviation & root cause analysis.
 """
 
 import uuid
@@ -22,7 +23,7 @@ from apexforge.models.data_models import (
 
 
 class AnomalyEngine:
-    def __init__(self, structuring_threshold: float = 10000.0):
+    def __init__(self, structuring_threshold: float = 1000000.0):
         self.structuring_threshold = structuring_threshold
 
     def evaluate_anomalies(
@@ -38,19 +39,20 @@ class AnomalyEngine:
         if not transactions:
             return anomalies
 
-        # 1. Statistical Isolation Forest Anomaly Detection
+        # 1. Statistical Isolation Forest Outlier Analysis
         iso_anomalies = self._run_isolation_forest(transactions)
         anomalies.extend(iso_anomalies)
 
-        # 2. Rule-Based Forensic Analysis across all 12 Categories
+        # 2. Rule-Based Forensic Analysis across 12 Categories
 
         # Category 1: Unusually High Amount (95th Percentile Rule)
         amounts = [t.amount for t in transactions]
         if len(amounts) > 3:
             p95 = np.percentile(amounts, 95)
             for tx in transactions:
-                if tx.amount > p95 and tx.amount > 50000:
+                if tx.amount > p95 and tx.amount > 500000:
                     score = min(1.0, round(tx.amount / (p95 * 2.0), 2))
+                    excess_pct = ((tx.amount / p95) - 1) * 100
                     anomalies.append(
                         AnomalyFinding(
                             anomaly_id=f"ANO-{uuid.uuid4().hex[:8].upper()}",
@@ -58,8 +60,13 @@ class AnomalyEngine:
                             entity_id=tx.sender_id,
                             anomaly_type=AnomalyCategory.UNUSUALLY_HIGH_AMOUNT,
                             anomaly_score=min(0.95, max(0.70, score)),
-                            severity=AnomalySeverity.HIGH if tx.amount > 100000 else AnomalySeverity.MEDIUM,
-                            explanation=f"Transaction amount ${tx.amount:,.2f} exceeds 95th percentile threshold (${p95:,.2f}) by {((tx.amount/p95)-1)*100:.1f}%.",
+                            severity=AnomalySeverity.HIGH if tx.amount > 5000000 else AnomalySeverity.MEDIUM,
+                            explanation=f"Transaction of ₹{tx.amount:,.2f} INR exceeds 95th percentile benchmark (₹{p95:,.2f}) by {excess_pct:.1f}%.",
+                            expected_baseline=f"Peer 95th Percentile Ceiling: ₹{p95:,.2f} INR",
+                            observed_value=f"Actual Wire Transfer: ₹{tx.amount:,.2f} INR",
+                            deviation_delta=f"Exceeds baseline ceiling by ₹{tx.amount - p95:,.2f} INR (+{excess_pct:.1f}%)",
+                            evidence_location=f"Doc ID: {tx.document_id} ({tx.payment_reference})",
+                            audit_recommendation="Obtain Board Resolution, Bank Statement & Contract Agreement to verify commercial justification.",
                             supporting_features={"amount": tx.amount, "p95_threshold": round(p95, 2)},
                             evidence_documents=[tx.document_id] if tx.document_id else [],
                         )
@@ -73,9 +80,14 @@ class AnomalyEngine:
                     transaction_id=cyc.transactions_involved[0] if cyc.transactions_involved else None,
                     entity_id=None,
                     anomaly_type=AnomalyCategory.CIRCULAR_TRANSACTION,
-                    anomaly_score=0.92,
+                    anomaly_score=0.95,
                     severity=AnomalySeverity.CRITICAL,
-                    explanation=f"Circular transaction flow detected: {cyc.explanation}",
+                    explanation=f"Circular round-trip transaction flow detected: {cyc.explanation}",
+                    expected_baseline="Linear commercial supply chain flow with physical movement of goods/services.",
+                    observed_value=f"Closed Loop Path: {' ➔ '.join(cyc.entities_involved)}",
+                    deviation_delta=f"Round-trip circular flow returning 100% of ₹{cyc.total_amount:,.2f} INR back to originating cluster.",
+                    evidence_location=f"Source Documents: {', '.join(cyc.source_documents)}",
+                    audit_recommendation="Reverse Input Tax Credit (ITC) under CGST Sec 16(2) and issue Audit Qualification under SA 240 Fraud Risk.",
                     supporting_features={
                         "cycle_length": cyc.cycle_length,
                         "total_amount": cyc.total_amount,
@@ -85,14 +97,13 @@ class AnomalyEngine:
                 )
             )
 
-        # Category 5: Structuring / Splitting Pattern (Smurfing under $10k threshold)
+        # Category 5: Structuring / Splitting Pattern (Smurfing under statutory limits)
         sender_txs: Dict[str, List[Transaction]] = {}
         for tx in transactions:
             sender_txs.setdefault(tx.sender_name, []).append(tx)
 
         for sender, tx_list in sender_txs.items():
-            # Check for multiple transactions just under CTR threshold ($9,000 - $9,999)
-            structured = [t for t in tx_list if 8500.0 <= t.amount < self.structuring_threshold]
+            structured = [t for t in tx_list if 8000.0 <= t.amount < 10000.0 or 80000.0 <= t.amount < 100000.0]
             if len(structured) >= 2:
                 tot_struct = sum(t.amount for t in structured)
                 anomalies.append(
@@ -103,7 +114,12 @@ class AnomalyEngine:
                         anomaly_type=AnomalyCategory.STRUCTURING_SPLITTING,
                         anomaly_score=0.96,
                         severity=AnomalySeverity.CRITICAL,
-                        explanation=f"Detected {len(structured)} structured transactions from '{sender}' totaling ${tot_struct:,.2f}, each individually below the ${self.structuring_threshold:,.2f} mandatory reporting threshold.",
+                        explanation=f"Detected {len(structured)} structured transactions from '{sender}' totaling ₹{tot_struct:,.2f} INR, each individually broken below mandatory reporting limits.",
+                        expected_baseline="Consolidated single transaction reporting.",
+                        observed_value=f"{len(structured)} split deposits ranging from ₹{min(t.amount for t in structured):,.2f} to ₹{max(t.amount for t in structured):,.2f}",
+                        deviation_delta=f"Split pattern evading CTR reporting threshold; cumulative total ₹{tot_struct:,.2f} INR",
+                        evidence_location=f"Docs: {', '.join(set(t.document_id for t in structured if t.document_id))}",
+                        audit_recommendation="File Suspicious Transaction Report (STR) with FIU-IND and audit cash deposit ledgers.",
                         supporting_features={
                             "sender": sender,
                             "structured_count": len(structured),
@@ -130,7 +146,12 @@ class AnomalyEngine:
                         anomaly_type=AnomalyCategory.DUPLICATE_TRANSACTION,
                         anomaly_score=0.85,
                         severity=AnomalySeverity.HIGH,
-                        explanation=f"Duplicate transaction pattern: {len(dup_list)} identical transfers of ${sig[2]:,.2f} from '{sig[0]}' to '{sig[1]}'.",
+                        explanation=f"Duplicate transaction pattern: {len(dup_list)} identical transfers of ₹{sig[2]:,.2f} INR from '{sig[0]}' to '{sig[1]}'.",
+                        expected_baseline="Single unique payment entry per invoice/deliverable.",
+                        observed_value=f"{len(dup_list)} identical payments of ₹{sig[2]:,.2f} INR",
+                        deviation_delta=f"Duplicate entry causing ₹{sig[2] * (len(dup_list)-1):,.2f} INR overstatement",
+                        evidence_location=f"Docs: {', '.join(set(t.document_id for t in dup_list if t.document_id))}",
+                        audit_recommendation="Verify bank scroll to check whether duplicate debit actually occurred or if ledger has duplicate entry.",
                         supporting_features={
                             "duplicate_count": len(dup_list),
                             "amount": sig[2],
@@ -142,14 +163,12 @@ class AnomalyEngine:
                 )
 
         # Category 10: Segregation of Duties Violation
-        # Search for person who approved an invoice AND issued/created it
         approvers = [r for r in relationships if r.relation_type.value == "APPROVED"]
         issuers = [r for r in relationships if r.relation_type.value == "ISSUED"]
         
         for app in approvers:
             for iss in issuers:
                 if app.source_id == iss.source_id:
-                    # Same person approved and issued
                     person_name = next((e.name for e in entities if e.entity_id == app.source_id), app.source_id)
                     anomalies.append(
                         AnomalyFinding(
@@ -159,27 +178,36 @@ class AnomalyEngine:
                             anomaly_type=AnomalyCategory.SEGREGATION_OF_DUTIES,
                             anomaly_score=0.98,
                             severity=AnomalySeverity.CRITICAL,
-                            explanation=f"Segregation-of-Duties conflict: Entity '{person_name}' both issued and approved financial document/invoice.",
+                            explanation=f"Segregation-of-Duties conflict: Officer '{person_name}' both issued and approved financial invoice/document.",
+                            expected_baseline="Independent Dual Control (Maker-Checker segregation).",
+                            observed_value=f"Single Officer '{person_name}' performed Maker (Issued) AND Checker (Approved) roles.",
+                            deviation_delta="100% breach of internal control segregation standards.",
+                            evidence_location=f"Doc ID: {app.document_id} & {iss.document_id}",
+                            audit_recommendation="Flag in Form 3CD Internal Control Observations & request Board Audit Committee inquiry.",
                             supporting_features={"person_id": app.source_id, "evidence_app": app.evidence_text, "evidence_iss": iss.evidence_text},
                             evidence_documents=list(set([app.document_id, iss.document_id])),
                         )
                     )
 
-        # Category 7: Missing Documentation (Payment without matching invoice or reference)
+        # Category 7: Missing Documentation (Payment without matching invoice/PO)
         for tx in transactions:
             if not tx.payment_reference or "Ref in DOC" in tx.payment_reference:
-                # Check if there is an associated invoice document
                 doc_has_invoice = any("INV-" in d.extracted_text for d in documents if d.document_id == tx.document_id)
-                if not doc_has_invoice and tx.amount > 20000:
+                if not doc_has_invoice and tx.amount > 1000000:
                     anomalies.append(
                         AnomalyFinding(
                             anomaly_id=f"ANO-{uuid.uuid4().hex[:8].upper()}",
                             transaction_id=tx.transaction_id,
                             entity_id=tx.sender_id,
                             anomaly_type=AnomalyCategory.MISSING_DOCUMENTATION,
-                            anomaly_score=0.75,
+                            anomaly_score=0.78,
                             severity=AnomalySeverity.MEDIUM,
-                            explanation=f"High-value payment of ${tx.amount:,.2f} from '{tx.sender_name}' to '{tx.receiver_name}' lacks backing invoice or purchase order documentation.",
+                            explanation=f"High-value disbursement of ₹{tx.amount:,.2f} INR from '{tx.sender_name}' to '{tx.receiver_name}' lacks backing tax invoice or purchase order.",
+                            expected_baseline="Mandatory Tax Invoice, Purchase Order & E-Way bill for payments > ₹1,00,000.",
+                            observed_value=f"Payment disbursement of ₹{tx.amount:,.2f} INR without attached invoice.",
+                            deviation_delta="Unbacked disbursement lacking deliverable proof.",
+                            evidence_location=f"Doc ID: {tx.document_id}",
+                            audit_recommendation="Disallow expenditure u/s 37(1) for lack of business proof until invoice is furnished.",
                             supporting_features={"amount": tx.amount, "sender": tx.sender_name, "receiver": tx.receiver_name},
                             evidence_documents=[tx.document_id] if tx.document_id else [],
                         )
@@ -192,7 +220,6 @@ class AnomalyEngine:
         if len(transactions) < 5:
             return anomalies
 
-        # Feature matrix: [amount, log(amount), len(sender_name), len(receiver_name)]
         X = []
         for tx in transactions:
             amt = max(1.0, tx.amount)
@@ -202,10 +229,10 @@ class AnomalyEngine:
         try:
             clf = IsolationForest(contamination=0.15, random_state=42)
             preds = clf.fit_predict(X)
-            scores = -clf.score_samples(X)  # Higher score = more anomalous
+            scores = -clf.score_samples(X)
 
             for idx, (pred, score) in enumerate(zip(preds, scores)):
-                if pred == -1:  # Outlier
+                if pred == -1:
                     tx = transactions[idx]
                     norm_score = min(0.99, max(0.65, round(float(score), 2)))
                     anomalies.append(
@@ -216,7 +243,12 @@ class AnomalyEngine:
                             anomaly_type=AnomalyCategory.UNUSUAL_ACCOUNT_RELATIONSHIP,
                             anomaly_score=norm_score,
                             severity=AnomalySeverity.HIGH if norm_score > 0.85 else AnomalySeverity.MEDIUM,
-                            explanation=f"Statistical outlier detected via Isolation Forest (anomaly score {norm_score:.2f}) for transfer of ${tx.amount:,.2f} between '{tx.sender_name}' and '{tx.receiver_name}'.",
+                            explanation=f"Statistical outlier detected via Isolation Forest (score {norm_score:.2f}) for transfer of ₹{tx.amount:,.2f} INR between '{tx.sender_name}' and '{tx.receiver_name}'.",
+                            expected_baseline="Standard transaction cluster distribution.",
+                            observed_value=f"Outlier transfer of ₹{tx.amount:,.2f} INR (Isolation Forest Score: {norm_score:.2f})",
+                            deviation_delta="Multivariate statistical deviation from peer transaction clusters",
+                            evidence_location=f"Doc ID: {tx.document_id}",
+                            audit_recommendation="Audit counterparty ledger balances and confirm transaction commercial rationale.",
                             supporting_features={
                                 "amount": tx.amount,
                                 "isolation_score": float(score),

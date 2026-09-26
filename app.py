@@ -1,7 +1,8 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
-Standardized on Indian Rupee (₹ INR) for Chartered Accountant (CA) Statutory Auditing, Form 3CD & GST Compliance.
+Featuring Severity Level Anomaly Segregation, Forensic Deviation Analysis, All-Format Document Ingestion,
+and Indian Income Tax (1961) & GST Act (2017) Chartered Accountant Audit Engine.
 """
 
 import os
@@ -25,6 +26,7 @@ from apexforge.models.data_models import (
     TransactionCycle,
     AnomalyFinding,
     PolicyFinding,
+    AnomalySeverity,
 )
 from apexforge.ingestion.document_loader import DocumentLoader
 from apexforge.generator.synthetic_data import SyntheticDataGenerator
@@ -64,6 +66,25 @@ st.markdown(
         padding-right: 14px;
         border-radius: 4px;
     }
+    .deviation-card {
+        background-color: #1E222A;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 15px;
+        border-left: 5px solid #1E88E5;
+    }
+    .deviation-critical {
+        border-left: 5px solid #D32F2F !important;
+    }
+    .deviation-high {
+        border-left: 5px solid #F57C00 !important;
+    }
+    .deviation-medium {
+        border-left: 5px solid #FBC02D !important;
+    }
+    .deviation-low {
+        border-left: 5px solid #388E3C !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -89,7 +110,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.2 (₹ INR Standard)")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.3")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -130,7 +151,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 Executive Summary",
     "📁 Multi-File Ingestion",
     "🕸️ Clean Transaction Graph",
-    "🔄 Cycles & Anomalies",
+    "🚨 Segregated Anomalies & Deviations",
     "🇮🇳 CA Tax Audit (Income Tax & GST)",
     "📜 Policy RAG Verification",
     "🔐 Audit Ledger & Report",
@@ -454,11 +475,76 @@ with tab3:
                 st.warning("No direct path found within 6 hops.")
 
 # ==============================================================================
-# TAB 4: CYCLES & ANOMALY ENGINE
+# TAB 4: SEGREGATED ANOMALIES & DEVIATION ROOT CAUSE ANALYSIS (NEW SEVERITY TAB)
 # ==============================================================================
 with tab4:
-    st.header("Graph Cycle Detection & 12-Category Anomaly Engine")
-    
+    st.header("🚨 Segregated Anomaly & Forensic Deviation Engine")
+    st.caption("Anomalies grouped by Severity Tiers with Baseline vs. Observed Deviation Analysis & Document Location Pointers.")
+
+    # Severity Tier Filter Cards
+    crit_list = [a for a in anomalies if a.severity == AnomalySeverity.CRITICAL]
+    high_list = [a for a in anomalies if a.severity == AnomalySeverity.HIGH]
+    med_list = [a for a in anomalies if a.severity == AnomalySeverity.MEDIUM]
+    low_list = [a for a in anomalies if a.severity == AnomalySeverity.LOW]
+
+    sev_c1, sev_c2, sev_c3, sev_c4 = st.columns(4)
+    sev_c1.metric("🔴 CRITICAL Severity", len(crit_list), delta="Immediate Audit Priority", delta_color="inverse")
+    sev_c2.metric("🟠 HIGH Severity", len(high_list), delta="High Financial Exposure", delta_color="inverse")
+    sev_c3.metric("🟡 MEDIUM Severity", len(med_list), delta="Documentation Defect")
+    sev_c4.metric("🟢 LOW Severity", len(low_list), delta="Minor Discrepancy")
+
+    st.markdown("---")
+    st.subheader("🔍 Severity Level Segregation Tabs")
+
+    s_tab1, s_tab2, s_tab3, s_tab4, s_tab5 = st.tabs([
+        f"📋 All Anomalies ({len(anomalies)})",
+        f"🔴 CRITICAL ({len(crit_list)})",
+        f"🟠 HIGH ({len(high_list)})",
+        f"🟡 MEDIUM ({len(med_list)})",
+        f"🟢 LOW ({len(low_list)})",
+    ])
+
+    def render_anomaly_cards(anomaly_group: List[AnomalyFinding]):
+        if not anomaly_group:
+            st.info("No anomalies in this severity category.")
+            return
+
+        for idx, a in enumerate(anomaly_group):
+            sev_class = f"deviation-{a.severity.value.lower()}"
+            badge_color = {
+                "CRITICAL": "🔴 #D32F2F",
+                "HIGH": "🟠 #F57C00",
+                "MEDIUM": "🟡 #FBC02D",
+                "LOW": "🟢 #388E3C",
+            }.get(a.severity.value, "#888888")
+
+            with st.expander(f"[{a.severity.value}] {a.anomaly_type.value} — ID: {a.anomaly_id} (Score: {a.anomaly_score:.2f})", expanded=(idx < 2)):
+                st.markdown(f"**Explanation:** {a.explanation}")
+                
+                # 2x2 Forensic Deviation Matrix
+                st.markdown("##### 📊 Forensic Deviation Breakdown (Where Transaction Defers)")
+                d1, d2 = st.columns(2)
+                with d1:
+                    st.markdown(f"🎯 **Expected Statutory Baseline:** `{a.expected_baseline or 'Standard Business Policy Benchmark'}`")
+                    st.markdown(f"🔍 **Observed Evidence Value:** `{a.observed_value or 'Actual Recorded Transaction Payload'}`")
+                with d2:
+                    st.markdown(f"📈 **Variance / Deviation Delta:** `{a.deviation_delta or 'Deviates from established compliance threshold'}`")
+                    st.markdown(f"📍 **Evidence Document Pointer:** `{a.evidence_location or ', '.join(a.evidence_documents)}`")
+
+                st.markdown(f"💡 **CA Audit Recommendation:** {a.audit_recommendation or 'Audit evidence document and verify compliance.'}")
+
+    with s_tab1:
+        render_anomaly_cards(anomalies)
+    with s_tab2:
+        render_anomaly_cards(crit_list)
+    with s_tab3:
+        render_anomaly_cards(high_list)
+    with s_tab4:
+        render_anomaly_cards(med_list)
+    with s_tab5:
+        render_anomaly_cards(low_list)
+
+    st.markdown("---")
     st.subheader("🔄 Detected Circular Transaction Loops")
     if cycles:
         cycle_table = []
@@ -475,24 +561,8 @@ with tab4:
     else:
         st.info("No closed transaction cycles detected in graph.")
 
-    st.markdown("---")
-    st.subheader("🚨 Explainable Anomaly Findings Table")
-    
-    anomaly_data = []
-    for a in anomalies:
-        anomaly_data.append({
-            "Anomaly ID": a.anomaly_id,
-            "Category": a.anomaly_type.value,
-            "Severity": a.severity.value,
-            "Explainable Score": f"{a.anomaly_score:.2f}",
-            "Explanation & Feature Basis": a.explanation,
-            "Evidence Docs": ", ".join(a.evidence_documents),
-        })
-    
-    st.dataframe(pd.DataFrame(anomaly_data), use_container_width=True)
-
 # ==============================================================================
-# TAB 5: INDIAN CA TAX AUDIT & STATUTORY COMPLIANCE (100% UNIFIED DATASET)
+# TAB 5: INDIAN CA TAX AUDIT & STATUTORY COMPLIANCE
 # ==============================================================================
 with tab5:
     st.header("🇮🇳 Indian Income Tax (1961) & GST Act (2017) CA Audit Module")
@@ -500,7 +570,6 @@ with tab5:
 
     metrics = ca_audit_results.get("summary_metrics", {})
     
-    # Statutory KPI Metrics (in INR ₹)
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Sec 40A(3) Disallowance", f"₹{metrics.get('total_sec_40a3_disallowance', 0):,.2f}", delta="Tax Audit Clause 21(b)", delta_color="inverse")
     m2.metric("Sec 269SS/269T Risk", f"₹{metrics.get('total_sec_269ss_penalty_exposure', 0):,.2f}", delta="Clause 31(a)/(b) 100% Penalty", delta_color="inverse")

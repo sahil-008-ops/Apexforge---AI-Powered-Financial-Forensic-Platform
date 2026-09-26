@@ -103,7 +103,7 @@ class Transaction(BaseModel):
     receiver_id: str
     receiver_name: str
     amount: float
-    currency: str = "USD"
+    currency: str = "INR"
     timestamp: str
     payment_reference: str = ""
     document_id: str = ""
@@ -119,15 +119,15 @@ class TransactionCycle(BaseModel):
     cycle_length: int
     source_documents: List[str]
     evidence: List[str]
-    risk_level: str = "Anomalous Cycle - Requires Investigation"
+    risk_level: str = "Anomalous Cycle - Requires Forensic Verification"
     explanation: str = ""
 
 
 class AnomalySeverity(str, Enum):
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
     CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
 class AnomalyCategory(str, Enum):
@@ -153,6 +153,11 @@ class AnomalyFinding(BaseModel):
     anomaly_score: float = Field(..., ge=0.0, le=1.0)
     severity: AnomalySeverity
     explanation: str
+    expected_baseline: str = ""
+    observed_value: str = ""
+    deviation_delta: str = ""
+    evidence_location: str = ""
+    audit_recommendation: str = ""
     supporting_features: Dict[str, Any] = Field(default_factory=dict)
     evidence_documents: List[str] = Field(default_factory=list)
 

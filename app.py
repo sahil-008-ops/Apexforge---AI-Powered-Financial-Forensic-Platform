@@ -1,10 +1,15 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
+Featuring All-Format Document Ingestion System & Non-Overlapping Interactive Graph Explorer
 """
 
+import os
+import tempfile
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 import networkx as nx
@@ -57,33 +62,13 @@ st.markdown(
         border-left: 4px solid #1E88E5;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .badge-critical {
-        background-color: #D32F2F;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
     }
-    .badge-high {
-        background-color: #F57C00;
-        color: white;
-        padding: 3px 8px;
+    .stTabs [data-baseweb="tab"] {
+        padding-left: 16px;
+        padding-right: 16px;
         border-radius: 4px;
-        font-weight: 600;
-    }
-    .badge-medium {
-        background-color: #FBC02D;
-        color: black;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    .badge-low {
-        background-color: #388E3C;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
     }
     </style>
     """,
@@ -114,8 +99,8 @@ st.sidebar.caption("AI-Powered Forensic Tracing Engine v1.0")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
-if st.sidebar.button("🚀 Load 50-Doc Fraud Benchmark", use_container_width=True):
-    with st.spinner("Processing 50 synthetic forensic documents across multi-agent pipeline..."):
+if st.sidebar.button("🚀 Run 50-Doc Fraud Benchmark", use_container_width=True):
+    with st.spinner("Executing multi-agent investigation across 50 benchmark documents..."):
         gen = SyntheticDataGenerator(seed=42)
         docs = gen.generate_benchmark_dataset()
         orch = get_orchestrator()
@@ -123,10 +108,12 @@ if st.sidebar.button("🚀 Load 50-Doc Fraud Benchmark", use_container_width=Tru
     st.sidebar.success("Benchmark Investigation Completed!")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Pipeline Settings")
-show_evidence_snippets = st.sidebar.checkbox("Show Raw Document Evidence", value=True)
-min_cycle_length = st.sidebar.slider("Min Cycle Length", 2, 5, 2)
-max_cycle_length = st.sidebar.slider("Max Cycle Length", 3, 8, 6)
+st.sidebar.subheader("Graph Visualization Engine")
+graph_engine_choice = st.sidebar.radio(
+    "Graph Rendering Engine",
+    ["Interactive Pyvis Physics (Zero Overlap)", "Plotly Clean Spacing Matrix"],
+    index=0
+)
 
 results = st.session_state["results"]
 docs: List[NormalizedDocument] = results["documents"]
@@ -146,8 +133,8 @@ st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing & Tr
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Executive Summary",
-    "📁 Document Ingestion",
-    "🕸️ Transaction Graph",
+    "📁 Multi-File Ingestion",
+    "🕸️ Clean Transaction Graph",
     "🔄 Cycles & Anomalies",
     "📜 Policy RAG Verification",
     "🔐 Audit Ledger & Report",
@@ -159,7 +146,6 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 with tab1:
     st.header("Executive Investigation Overview")
     
-    # KPI Metrics
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     total_vol = sum(t.amount for t in transactions)
     crit_count = sum(1 for a in anomalies if a.severity.value == "CRITICAL")
@@ -172,12 +158,10 @@ with tab1:
     col6.metric("Critical Anomalies", crit_count, delta=f"{crit_count} Critical", delta_color="inverse")
     
     st.markdown("---")
-    
     st.subheader("🤖 Executive Narrative Summary")
     st.info(narrative.executive_summary)
     
     col_left, col_right = st.columns(2)
-    
     with col_left:
         st.markdown("### 📌 Key Observed Facts")
         for fact in narrative.observed_facts[:6]:
@@ -198,32 +182,40 @@ with tab1:
         st.plotly_chart(fig_pie, use_container_width=True)
 
 # ==============================================================================
-# TAB 2: DOCUMENT INGESTION
+# TAB 2: MULTI-FILE INGESTION SYSTEM (ALL FILE TYPES SUPPORTED)
 # ==============================================================================
 with tab2:
-    st.header("Document Ingestion & SHA3-256 Provenance Ledger")
+    st.header("Universal Document Ingestion System")
+    st.caption("Upload financial evidence files of ANY format (.PDF, .CSV, .XLSX, .DOCX, .TXT, .EML, .JSON, Images, .LOG, etc.)")
     
-    # Upload new file widget
+    # Universal file uploader without restrictions
     uploaded_files = st.file_uploader(
-        "Ingest Financial Evidence Files (PDF, CSV, TXT, EML)",
-        type=["pdf", "csv", "txt", "eml"],
+        "Upload Financial Evidence Files (Any File Extension Supported)",
+        type=None,
         accept_multiple_files=True
     )
+    
     if uploaded_files:
-        loader = DocumentLoader()
-        new_docs = []
-        for uf in uploaded_files:
-            content = uf.read()
-            doc = loader.load_document(uf.name, override_text=content.decode("utf-8", errors="ignore"))
-            new_docs.append(doc)
-        
-        if st.button("Process Ingested Files"):
-            with st.spinner("Executing extraction on new documents..."):
+        if st.button("📥 Ingest & Process All Uploaded Documents", type="primary", use_container_width=True):
+            loader = DocumentLoader()
+            new_docs = []
+            for uf in uploaded_files:
+                raw_b = uf.read()
+                doc = loader.load_document(
+                    filepath=uf.name,
+                    override_bytes=raw_b
+                )
+                new_docs.append(doc)
+            
+            with st.spinner(f"Ingesting {len(new_docs)} files across multi-agent pipeline..."):
                 all_docs = docs + new_docs
-                st.session_state["results"] = get_orchestrator().run_investigation_pipeline(all_docs)
+                orch = get_orchestrator()
+                st.session_state["results"] = orch.run_investigation_pipeline(all_docs)
+                st.success(f"Successfully processed and ingested {len(new_docs)} new files!")
                 st.rerun()
 
-    st.markdown("### Ingested Evidence Documents")
+    st.markdown("---")
+    st.subheader("Ingested Evidence Library & SHA3-256 Provenance")
     
     doc_table_data = []
     for d in docs:
@@ -231,100 +223,236 @@ with tab2:
             "Document ID": d.document_id,
             "Filename": d.filename,
             "Type": d.document_type.value.upper(),
-            "SHA3-256 Hash": d.sha3_256_hash[:24] + "...",
-            "Status": d.processing_status.value,
+            "SHA3-256 Provenance Hash": d.sha3_256_hash,
+            "Processing Status": d.processing_status.value.upper(),
             "Ingested Timestamp": d.ingestion_timestamp[:19],
         })
     st.dataframe(pd.DataFrame(doc_table_data), use_container_width=True)
     
-    st.markdown("### Document Content & Evidence Viewer")
-    selected_doc_id = st.selectbox("Select Document ID to View", [d.document_id for d in docs])
+    st.markdown("---")
+    st.subheader("🔍 Document Raw Text & Metadata Inspector")
+    selected_doc_id = st.selectbox("Select Document ID to View Extracted Content", [d.document_id for d in docs])
     target_doc = next((d for d in docs if d.document_id == selected_doc_id), None)
     if target_doc:
-        st.text_area("Extracted Raw Content", target_doc.extracted_text, height=250)
-        st.json(target_doc.metadata)
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            st.text_area("Extracted Plain Text", target_doc.extracted_text, height=300)
+        with c2:
+            st.markdown("**File Metadata**")
+            st.json(target_doc.metadata)
 
 # ==============================================================================
-# TAB 3: TRANSACTION GRAPH EXPLORER
+# TAB 3: CLEAN TRANSACTION GRAPH EXPLORER (NON-OVERLAPPING)
 # ==============================================================================
 with tab3:
-    st.header("Transaction Graph & Entity Relationship Explorer")
-    
-    # Render interactive network graph using Plotly
-    g = graph_store.graph
-    pos = nx.spring_layout(g, seed=42)
-    
-    edge_x = []
-    edge_y = []
-    for edge in g.edges():
-        if edge[0] in pos and edge[1] in pos:
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_x.extend([x0, x1, None])
-            edge_y.extend([y0, y1, None])
+    st.header("Clean Entity-Transaction Network Graph")
+    st.caption("Visualizes relationships and payment routing with zero node overlap using force-directed physics layout.")
 
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=1, color='#555555'),
-        hoverinfo='none',
-        mode='lines'
-    )
-
-    node_x = []
-    node_y = []
-    node_text = []
-    node_color = []
+    # Graph Filters
+    st.markdown("#### ⚙️ Graph Filtering & Layout Controls")
+    fc1, fc2, fc3 = st.columns(3)
     
-    for node in g.nodes():
-        if node in pos:
-            x, y = pos[node]
-            node_x.append(x)
-            node_y.append(y)
-            lbl = g.nodes[node].get("label", node)
-            ntype = g.nodes[node].get("node_type", "Unknown")
-            node_text.append(f"Label: {lbl}<br>ID: {node}<br>Type: {ntype}")
-            
-            if ntype == "Company":
-                node_color.append("#1E88E5")
-            elif ntype == "Account":
-                node_color.append("#D32F2F")
-            elif ntype == "Person":
-                node_color.append("#388E3C")
-            elif ntype == "Invoice":
-                node_color.append("#FBC02D")
-            else:
-                node_color.append("#888888")
-
-    node_trace = go.Scatter(
-        x=node_x, y=node_y,
-        mode='markers+text',
-        hoverinfo='text',
-        textposition="top center",
-        text=[g.nodes[n].get("label", n) for n in g.nodes() if n in pos],
-        hovertext=node_text,
-        marker=dict(
-            showscale=False,
-            color=node_color,
-            size=18,
-            line_width=2
+    with fc1:
+        allowed_types = st.multiselect(
+            "Filter Node Types",
+            ["Company", "Account", "Person", "Invoice", "Transaction", "Document"],
+            default=["Company", "Account", "Person", "Invoice"]
         )
-    )
+    with fc2:
+        min_tx_val = st.slider("Min Transaction Value ($)", 0, 100000, 0, step=5000)
+    with fc3:
+        node_spacing = st.slider("Force Separation Distance", 1, 10, 5)
 
-    fig_net = go.Figure(data=[edge_trace, node_trace],
-                 layout=go.Layout(
-                    title='Unified Entity-Transaction Graph',
-                    showlegend=False,
-                    hovermode='closest',
-                    margin=dict(b=20,l=5,r=5,t=40),
-                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                    paper_bgcolor='#0E1117',
-                    plot_bgcolor='#0E1117',
-                 ))
-    
-    st.plotly_chart(fig_net, use_container_width=True)
-    
+    # Build filtered subgraph
+    g_raw = graph_store.graph
+    sub_nodes = []
+    for n, data in g_raw.nodes(data=True):
+        ntype = data.get("node_type", "Unknown")
+        if allowed_types and ntype not in allowed_types:
+            continue
+        sub_nodes.append(n)
+
+    g_sub = g_raw.subgraph(sub_nodes).copy()
+
+    # Filter edges by minimum transaction amount if transaction node or edge amount exists
+    if min_tx_val > 0:
+        remove_edges = []
+        for u, v, d in g_sub.edges(data=True):
+            amt = d.get("amount", 0.0)
+            if amt > 0 and amt < min_tx_val:
+                remove_edges.append((u, v))
+        g_sub.remove_edges_from(remove_edges)
+
+    # ENGINE CHOICE 1: PYVIS PHYSICS INTERACTIVE (Zero Overlap)
+    if "Pyvis" in graph_engine_choice:
+        try:
+            from pyvis.network import Network
+
+            net = Network(height="650px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
+            
+            # Configure Barnes-Hut repulsion physics to strictly prevent node overlap
+            physics_config = {
+                "physics": {
+                    "barnesHut": {
+                        "gravitationalConstant": -15000 * (node_spacing / 5.0),
+                        "centralGravity": 0.1,
+                        "springLength": 180 * (node_spacing / 5.0),
+                        "springConstant": 0.03,
+                        "damping": 0.09,
+                        "avoidOverlap": 1.0
+                    },
+                    "maxVelocity": 50,
+                    "minVelocity": 0.1,
+                    "solver": "barnesHut",
+                    "timestep": 0.5
+                },
+                "nodes": {
+                    "font": {"size": 14, "color": "#ffffff"},
+                    "borderWidth": 2,
+                    "shadow": True
+                },
+                "edges": {
+                    "font": {"size": 11, "color": "#aaaaaa", "align": "middle"},
+                    "color": {"color": "#555555", "highlight": "#1E88E5"},
+                    "arrows": {"to": {"enabled": True, "scaleFactor": 0.7}},
+                    "smooth": {"type": "curvedCW", "roundness": 0.2}
+                },
+                "interaction": {
+                    "hover": True,
+                    "navigationButtons": True,
+                    "tooltipDelay": 100
+                }
+            }
+            net.set_options(json.dumps(physics_config))
+
+            # Add nodes with distinct color codes and non-overlapping tooltips
+            color_map = {
+                "Company": "#1E88E5",      # Blue
+                "Account": "#D32F2F",      # Red
+                "Person": "#388E3C",       # Green
+                "Invoice": "#FBC02D",      # Yellow
+                "Transaction": "#F57C00",  # Orange
+                "Document": "#7B1FA2",     # Purple
+            }
+
+            for node, data in g_sub.nodes(data=True):
+                lbl = data.get("label", str(node))
+                ntype = data.get("node_type", "Entity")
+                color = color_map.get(ntype, "#888888")
+                
+                title_tooltip = f"<b>{lbl}</b><br>ID: {node}<br>Type: {ntype}"
+                if "document_id" in data:
+                    title_tooltip += f"<br>Doc: {data['document_id']}"
+                if "amount" in data:
+                    title_tooltip += f"<br>Amount: ${data['amount']:,.2f}"
+
+                net.add_node(
+                    node,
+                    label=lbl,
+                    title=title_tooltip,
+                    color=color,
+                    shape="dot" if ntype in ["Company", "Account"] else "ellipse",
+                    size=22 if ntype == "Company" else 16
+                )
+
+            # Add edges
+            for u, v, d in g_sub.edges(data=True):
+                rel = d.get("relation_type", "TRANSFERRED")
+                amt = d.get("amount", 0.0)
+                edge_label = f"${amt:,.0f}" if amt > 0 else rel
+                edge_title = f"{rel}: ${amt:,.2f}" if amt > 0 else rel
+
+                net.add_edge(u, v, label=edge_label, title=edge_title)
+
+            # Render HTML string and embed inside Streamlit
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+                net.save_graph(tmp.name)
+                with open(tmp.name, "r", encoding="utf-8") as f:
+                    html_content = f.read()
+
+            components.html(html_content, height=670, scrolling=False)
+
+        except Exception as e:
+            st.error(f"Pyvis rendering error: {e}. Falling back to Plotly engine.")
+
+    # ENGINE CHOICE 2: PLOTLY HIGH-SPACING ENGINE
+    else:
+        k_factor = 3.5 * (node_spacing / 5.0) / (np.sqrt(max(1, g_sub.number_of_nodes())))
+        pos = nx.spring_layout(g_sub, k=k_factor, iterations=120, seed=42)
+
+        edge_x, edge_y = [], []
+        for edge in g_sub.edges():
+            if edge[0] in pos and edge[1] in pos:
+                x0, y0 = pos[edge[0]]
+                x1, y1 = pos[edge[1]]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+
+        edge_trace = go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=1.2, color='#666666'),
+            hoverinfo='none',
+            mode='lines'
+        )
+
+        node_x, node_y, node_hover, node_colors, node_sizes, node_labels = [], [], [], [], [], []
+        color_map = {
+            "Company": "#1E88E5",
+            "Account": "#D32F2F",
+            "Person": "#388E3C",
+            "Invoice": "#FBC02D",
+            "Transaction": "#F57C00",
+            "Document": "#7B1FA2",
+        }
+
+        for node in g_sub.nodes():
+            if node in pos:
+                x, y = pos[node]
+                node_x.append(x)
+                node_y.append(y)
+                lbl = g_sub.nodes[node].get("label", str(node))
+                ntype = g_sub.nodes[node].get("node_type", "Unknown")
+                
+                node_labels.append(lbl)
+                node_hover.append(f"<b>{lbl}</b><br>ID: {node}<br>Type: {ntype}")
+                node_colors.append(color_map.get(ntype, "#888888"))
+                node_sizes.append(24 if ntype == "Company" else 18)
+
+        show_labels = st.checkbox("Toggle Node Text Labels", value=True)
+
+        node_trace = go.Scatter(
+            x=node_x, y=node_y,
+            mode='markers+text' if show_labels else 'markers',
+            hoverinfo='text',
+            text=node_labels,
+            textposition="top center",
+            textfont=dict(size=12, color="white"),
+            hovertext=node_hover,
+            marker=dict(
+                color=node_colors,
+                size=node_sizes,
+                line=dict(width=2, color="white")
+            )
+        )
+
+        fig_net = go.Figure(
+            data=[edge_trace, node_trace],
+            layout=go.Layout(
+                title='Clean Non-Overlapping Spacing Graph',
+                showlegend=False,
+                hovermode='closest',
+                margin=dict(b=20, l=5, r=5, t=40),
+                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                paper_bgcolor='#0E1117',
+                plot_bgcolor='#0E1117',
+                height=650,
+            )
+        )
+        st.plotly_chart(fig_net, use_container_width=True)
+
     # Path Tracing Tool
+    st.markdown("---")
     st.subheader("🔎 Entity Path Tracing Tool")
     col_a, col_b = st.columns(2)
     all_ent_ids = [e.entity_id for e in entities]
@@ -337,7 +465,7 @@ with tab3:
             if paths:
                 st.success(f"Found {len(paths)} simple path(s) between entities:")
                 for p in paths:
-                    st.code(" -> ".join(p))
+                    st.code(" ➔ ".join(p))
             else:
                 st.warning("No direct path found within 6 hops.")
 
@@ -385,7 +513,6 @@ with tab4:
 with tab5:
     st.header("RAG Policy Verification & Compliance Engine")
     
-    # Vector Search query tool
     st.subheader("🔍 Query Internal Policy Vector Database (ChromaDB)")
     policy_query = st.text_input("Enter natural language policy query:", "smurfing CTR threshold structuring invoice approval segregation of duties")
     

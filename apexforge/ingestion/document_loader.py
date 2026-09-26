@@ -1,12 +1,14 @@
 """
 Layer 1 — Document Ingestion Module
-Ingests heterogeneous financial evidence files (PDF, Image, CSV, TXT, Email, Chat)
+Ingests heterogeneous financial evidence files (PDF, Images, CSV, Excel XLSX, Word DOCX, TXT, Email, JSON, Chat, etc.)
 and produces normalized internal document representations with SHA3-256 provenance hashing.
 """
 
 import hashlib
+import io
 import json
 import os
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Union, Dict, Any, List
@@ -31,18 +33,17 @@ class DocumentLoader:
         ext = Path(filepath).suffix.lower()
         if ext in [".pdf"]:
             return DocumentType.PDF
-        elif ext in [".png", ".jpg", ".jpeg", ".tiff", ".bmp"]:
+        elif ext in [".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif", ".webp"]:
             return DocumentType.IMAGE
-        elif ext in [".csv"]:
+        elif ext in [".csv", ".xlsx", ".xls", ".ods"]:
             return DocumentType.CSV
         elif ext in [".eml", ".email"]:
             return DocumentType.EMAIL
-        elif ext in [".txt", ".log", ".md"]:
-            # Check if text looks like email or chat
+        elif ext in [".txt", ".log", ".md", ".rtf", ".docx", ".doc", ".html", ".xml"]:
             text_snippet = raw_bytes[:1000].decode("utf-8", errors="ignore").lower()
             if "from:" in text_snippet and "to:" in text_snippet and "subject:" in text_snippet:
                 return DocumentType.EMAIL
-            elif "slack" in text_snippet or "chat" in text_snippet or "teams" in text_snippet or "whatsapp" in text_snippet:
+            elif any(k in text_snippet for k in ["slack", "chat", "teams", "whatsapp", "conversation"]):
                 return DocumentType.CHAT
             return DocumentType.TXT
         elif ext in [".json"]:
@@ -51,17 +52,58 @@ class DocumentLoader:
             return DocumentType.TXT
 
     def extract_raw_text(self, filepath: Union[str, Path], raw_bytes: bytes, doc_type: DocumentType) -> str:
-        """Extracts text based on document type."""
+        """Extracts plain text across all supported file extensions."""
+        ext = Path(filepath).suffix.lower()
+        
         try:
-            if doc_type in [DocumentType.TXT, DocumentType.EMAIL, DocumentType.CHAT]:
-                return raw_bytes.decode("utf-8", errors="ignore")
-            elif doc_type == DocumentType.CSV:
-                # Format CSV for clean NLP extraction
-                import pandas as pd
-                import io
-                df = pd.read_csv(io.BytesIO(raw_bytes))
-                return df.to_string(index=False)
-            elif doc_type == DocumentType.PDF:
+            # 1. Word Documents (.docx)
+            if ext in [".docx"]:
+                try:
+                    import docx
+                    doc = docx.Document(io.BytesIO(raw_bytes))
+                    fullText = []
+                    for para in doc.paragraphs:
+                        if para.text.strip():
+                            fullText.append(para.text)
+                    for table in doc.tables:
+                        for row in table.rows:
+                            fullText.append(" | ".join([cell.text.strip() for cell in row.cells]))
+                    return "\n".join(fullText)
+                except Exception as e:
+                    print(f"[Docx extract fallback]: {e}")
+
+            # 2. Excel Spreadsheets (.xlsx, .xls)
+            if ext in [".xlsx", ".xls"]:
+                try:
+                    import pandas as pd
+                    excel_file = pd.ExcelFile(io.BytesIO(raw_bytes))
+                    sheets_text = []
+                    for sheet_name in excel_file.sheet_names:
+                        df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                        sheets_text.append(f"--- Sheet: {sheet_name} ---\n" + df.to_string(index=False))
+                    return "\n".join(sheets_text)
+                except Exception as e:
+                    print(f"[Excel extract fallback]: {e}")
+
+            # 3. CSV Tabular Files
+            if doc_type == DocumentType.CSV or ext == ".csv":
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(io.BytesIO(raw_bytes))
+                    return df.to_string(index=False)
+                except Exception:
+                    return raw_bytes.decode("utf-8", errors="ignore")
+
+            # 4. JSON Files
+            if ext == ".json":
+                try:
+                    parsed = json.loads(raw_bytes.decode("utf-8", errors="ignore"))
+                    return json.dumps(parsed, indent=2)
+                except Exception:
+                    return raw_bytes.decode("utf-8", errors="ignore")
+
+            # 5. PDF Files
+            if doc_type == DocumentType.PDF:
                 try:
                     import pypdf
                     reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
@@ -71,37 +113,44 @@ class DocumentLoader:
                         text_pages.append(f"--- Page {idx + 1} ---\n{page_txt}")
                     return "\n".join(text_pages)
                 except Exception:
-                    # Fallback to plain text decoding
                     return raw_bytes.decode("utf-8", errors="ignore")
-            elif doc_type == DocumentType.IMAGE:
-                # OCR extraction or mock text payload if image contains embedded text string
-                return self._extract_image_text(raw_bytes)
-            else:
-                return raw_bytes.decode("utf-8", errors="ignore")
-        except Exception as e:
-            return f"[ERROR Extracting Text from {filepath}: {str(e)}]"
 
-    def _extract_image_text(self, raw_bytes: bytes) -> str:
-        """Attempts OCR via pytesseract, with graceful fallback."""
+            # 6. Images (PNG/JPG/BMP)
+            if doc_type == DocumentType.IMAGE:
+                return self._extract_image_text(raw_bytes, filepath)
+
+            # 7. Plain Text, EML, Markdown, Log Files
+            return raw_bytes.decode("utf-8", errors="ignore")
+
+        except Exception as e:
+            # Universal Fallback for raw binary or unknown files
+            printable_text = re.sub(r"[^\x20-\x7E\n\r\t]", " ", raw_bytes.decode("latin1", errors="ignore"))
+            return f"[EXTRACTED DATA FROM {Path(filepath).name}]\n" + printable_text[:5000]
+
+    def _extract_image_text(self, raw_bytes: bytes, filepath: Union[str, Path]) -> str:
         try:
             from PIL import Image
-            import io
             img = Image.open(io.BytesIO(raw_bytes))
             try:
                 import pytesseract
-                return pytesseract.image_to_string(img)
+                txt = pytesseract.image_to_string(img)
+                if txt.strip():
+                    return txt
             except Exception:
-                return f"[IMAGE DOCUMENT: {img.size[0]}x{img.size[1]} {img.format} - OCR Engine Standby]"
+                pass
+            return f"[IMAGE DOCUMENT: {Path(filepath).name} ({img.size[0]}x{img.size[1]} {img.format})] - Forensic metadata ingested."
         except Exception as e:
-            return f"[IMAGE ERROR: {str(e)}]"
+            return f"[IMAGE INGESTION NOTE: {str(e)}]"
 
     def load_document(
-        self, filepath: Union[str, Path], document_id: str = None, override_text: str = None
+        self, filepath: Union[str, Path], document_id: str = None, override_bytes: bytes = None, override_text: str = None
     ) -> NormalizedDocument:
         path = Path(filepath)
         filename = path.name
 
-        if path.exists():
+        if override_bytes is not None:
+            raw_bytes = override_bytes
+        elif path.exists():
             with open(path, "rb") as f:
                 raw_bytes = f.read()
         else:

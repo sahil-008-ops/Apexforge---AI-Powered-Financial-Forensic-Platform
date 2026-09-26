@@ -1,8 +1,8 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
-Featuring Severity Level Anomaly Segregation, Auditor Variance Resolution Workflow, All-Format Document Ingestion,
-and Indian Income Tax (1961) & GST Act (2017) Chartered Accountant Audit Engine.
+Featuring Severity Level Anomaly Segregation, Indian CA Audit Resolution Workflow, All-Format Document Ingestion,
+and Indian Income Tax (1961) & GST Act (2017) Compliance Engine.
 """
 
 import os
@@ -66,20 +66,6 @@ st.markdown(
         padding-right: 14px;
         border-radius: 4px;
     }
-    .status-open {
-        background-color: #D32F2F;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    .status-corrected {
-        background-color: #388E3C;
-        color: white;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -114,7 +100,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.5")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.6")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -483,21 +469,8 @@ with tab3:
 # TAB 4: SEGREGATED ANOMALIES & AUDITOR VARIANCE CORRECTION WORKFLOW
 # ==============================================================================
 with tab4:
-    st.header("🚨 Segregated Anomaly & Forensic Variance Correction Engine")
-    st.caption("Anomalies grouped by Severity Tiers with Baseline vs. Observed Deviation Analysis & Auditor Correction Controls.")
-
-    # ONE-CLICK BATCH AUTO-CORRECT BUTTON FOR CAS
-    ac_col1, ac_col2 = st.columns([3, 1])
-    with ac_col1:
-        st.markdown("**Auditor Quick Action:** Correct all flagged tax & disallowance variances and record entries in SHA3-256 Audit Ledger.")
-    with ac_col2:
-        if st.button("⚡ Auto-Correct All Variances", type="primary", use_container_width=True):
-            orch = get_orchestrator()
-            count_corr = orch.auto_correct_all_tax_variances(results, auditor_name="CA Statutory Auditor")
-            st.success(f"Successfully corrected {count_corr} flagged variances and signed SHA3-256 Audit Ledger!")
-            st.rerun()
-
-    st.markdown("---")
+    st.header("🚨 Segregated Anomaly & Forensic Variance Engine")
+    st.caption("Anomalies grouped by Severity Tiers with Indian Statutory Law (Income Tax 1961 & CGST Act 2017) Deviation Analysis.")
 
     crit_list = [a for a in anomalies if a.severity == AnomalySeverity.CRITICAL]
     high_list = [a for a in anomalies if a.severity == AnomalySeverity.HIGH]
@@ -527,9 +500,9 @@ with tab4:
             return
 
         for idx, a in enumerate(anomaly_group):
-            exp_base = getattr(a, "expected_baseline", "") or "Standard Business Policy Benchmark"
-            obs_val = getattr(a, "observed_value", "") or "Actual Recorded Transaction Payload"
-            dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established compliance threshold"
+            exp_base = getattr(a, "expected_baseline", "") or "Standard Indian Statutory Compliance Benchmark"
+            obs_val = getattr(a, "observed_value", "") or "Actual Recorded Evidence Transaction Payload"
+            dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established statutory threshold"
             ev_loc = getattr(a, "evidence_location", "") or ", ".join(a.evidence_documents)
             aud_rec = getattr(a, "audit_recommendation", "") or "Audit evidence document and verify compliance."
             astatus = getattr(a, "status", "OPEN")
@@ -550,19 +523,19 @@ with tab4:
 
                 st.markdown(f"💡 **CA Audit Recommendation:** {aud_rec}")
                 
-                # AUDITOR VARIANCE CORRECTION FORM
+                # HUMAN CA AUDITOR VARIANCE CORRECTION FORM
                 st.markdown("---")
-                st.markdown(f"##### 🛠️ CA Auditor Variance Resolution Form (ID: `{a.anomaly_id}`)")
+                st.markdown(f"##### 🛠️ Human CA Auditor Variance Resolution Form (ID: `{a.anomaly_id}`)")
                 
                 if astatus != "OPEN":
-                    st.success(f"✅ Variance Corrected: **{astatus}** | Resolved by: `{getattr(a, 'resolved_by', 'CA Auditor')}` at `{getattr(a, 'resolved_timestamp', '')[:19]}`")
+                    st.success(f"✅ Variance Corrected: **{astatus}** | Signed by: `{getattr(a, 'resolved_by', 'CA Auditor')}` at `{getattr(a, 'resolved_timestamp', '')[:19]}`")
                     st.markdown(f"**Auditor Notes:** {getattr(a, 'auditor_resolution_notes', '')}")
 
                 with st.form(key=f"res_form_{a.anomaly_id}"):
                     f_col1, f_col2 = st.columns(2)
                     with f_col1:
                         action_choice = st.selectbox(
-                            "Select Audit Correction Action",
+                            "Select CA Audit Correction Action",
                             [
                                 "CORRECTED_DISALLOWED_IN_PGBP",
                                 "GST_ITC_REVERSED",
@@ -574,7 +547,7 @@ with tab4:
                         )
                         auditor_name_input = st.text_input("Auditor / CA Name", "CA Statutory Auditor", key=f"aud_{a.anomaly_id}")
                     with f_col2:
-                        notes_input = st.text_area("Auditor Resolution Notes & Form 3CD Clause References", f"Rectified variance u/s 40A(3) / GST Sec 16(2).", key=f"not_{a.anomaly_id}")
+                        notes_input = st.text_area("Auditor Resolution Notes & Form 3CD Clause References", "Rectified variance u/s 40A(3) / GST Sec 16(2).", key=f"not_{a.anomaly_id}")
                     
                     submit_res = st.form_submit_button("✍️ Apply CA Audit Correction & Sign SHA3-256 Ledger")
                     if submit_res:

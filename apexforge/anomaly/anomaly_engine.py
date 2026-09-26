@@ -2,7 +2,7 @@
 Section 7: Dedicated Forensic Anomaly Engine
 Combines deterministic forensic rules, statistical machine learning (Isolation Forest),
 and graph topological features to detect 12 categories of financial anomalies with explainable scoring,
-severity level segregation, and detailed deviation & root cause analysis.
+severity level segregation, and detailed Indian Statutory Law (Income Tax & GST Act) deviation analysis.
 """
 
 import uuid
@@ -23,7 +23,7 @@ from apexforge.models.data_models import (
 
 
 class AnomalyEngine:
-    def __init__(self, structuring_threshold: float = 1000000.0):
+    def __init__(self, structuring_threshold: float = 20000.0):
         self.structuring_threshold = structuring_threshold
 
     def evaluate_anomalies(
@@ -61,12 +61,12 @@ class AnomalyEngine:
                             anomaly_type=AnomalyCategory.UNUSUALLY_HIGH_AMOUNT,
                             anomaly_score=min(0.95, max(0.70, score)),
                             severity=AnomalySeverity.HIGH if tx.amount > 5000000 else AnomalySeverity.MEDIUM,
-                            explanation=f"Transaction of ₹{tx.amount:,.2f} INR exceeds 95th percentile benchmark (₹{p95:,.2f}) by {excess_pct:.1f}%.",
+                            explanation=f"Transaction of ₹{tx.amount:,.2f} INR exceeds 95th percentile benchmark (₹{p95:,.2f} INR) by {excess_pct:.1f}%. Attracts scrutiny under Income Tax Section 68/69.",
                             expected_baseline=f"Peer 95th Percentile Ceiling: ₹{p95:,.2f} INR",
                             observed_value=f"Actual Wire Transfer: ₹{tx.amount:,.2f} INR",
                             deviation_delta=f"Exceeds baseline ceiling by ₹{tx.amount - p95:,.2f} INR (+{excess_pct:.1f}%)",
                             evidence_location=f"Doc ID: {tx.document_id} ({tx.payment_reference})",
-                            audit_recommendation="Obtain Board Resolution, Bank Statement & Contract Agreement to verify commercial justification.",
+                            audit_recommendation="Obtain Board Resolution, Bank Scroll Statement & Service Agreement u/s 68.",
                             supporting_features={"amount": tx.amount, "p95_threshold": round(p95, 2)},
                             evidence_documents=[tx.document_id] if tx.document_id else [],
                         )
@@ -82,12 +82,12 @@ class AnomalyEngine:
                     anomaly_type=AnomalyCategory.CIRCULAR_TRANSACTION,
                     anomaly_score=0.95,
                     severity=AnomalySeverity.CRITICAL,
-                    explanation=f"Circular round-trip transaction flow detected: {cyc.explanation}",
-                    expected_baseline="Linear commercial supply chain flow with physical movement of goods/services.",
+                    explanation=f"CGST Sec 16(2)/132 Circular Trading Flow Detected: Closed round-trip loop totaling ₹{cyc.total_amount:,.2f} INR across {cyc.cycle_length} entities without physical supply of goods.",
+                    expected_baseline="Linear commercial supply chain flow with physical movement of goods & e-Way bill.",
                     observed_value=f"Closed Loop Path: {' ➔ '.join(cyc.entities_involved)}",
                     deviation_delta=f"Round-trip circular flow returning 100% of ₹{cyc.total_amount:,.2f} INR back to originating cluster.",
                     evidence_location=f"Source Documents: {', '.join(cyc.source_documents)}",
-                    audit_recommendation="Reverse Input Tax Credit (ITC) under CGST Sec 16(2) and issue Audit Qualification under SA 240 Fraud Risk.",
+                    audit_recommendation="Reverse Input Tax Credit (ITC) under CGST Sec 16(2)(c) with 24% interest u/s 50 and issue Tax Audit Note.",
                     supporting_features={
                         "cycle_length": cyc.cycle_length,
                         "total_amount": cyc.total_amount,
@@ -97,13 +97,13 @@ class AnomalyEngine:
                 )
             )
 
-        # Category 5: Structuring / Splitting Pattern (Smurfing under statutory limits)
+        # Category 5: Structuring / Cash Loans u/s 269SS & 269T
         sender_txs: Dict[str, List[Transaction]] = {}
         for tx in transactions:
             sender_txs.setdefault(tx.sender_name, []).append(tx)
 
         for sender, tx_list in sender_txs.items():
-            structured = [t for t in tx_list if 8000.0 <= t.amount < 10000.0 or 80000.0 <= t.amount < 100000.0]
+            structured = [t for t in tx_list if 8000.0 <= t.amount < 10000.0 or 20000.0 <= t.amount < 50000.0]
             if len(structured) >= 2:
                 tot_struct = sum(t.amount for t in structured)
                 anomalies.append(
@@ -114,12 +114,12 @@ class AnomalyEngine:
                         anomaly_type=AnomalyCategory.STRUCTURING_SPLITTING,
                         anomaly_score=0.96,
                         severity=AnomalySeverity.CRITICAL,
-                        explanation=f"Detected {len(structured)} structured transactions from '{sender}' totaling ₹{tot_struct:,.2f} INR, each individually broken below mandatory reporting limits.",
-                        expected_baseline="Consolidated single transaction reporting.",
-                        observed_value=f"{len(structured)} split deposits ranging from ₹{min(t.amount for t in structured):,.2f} to ₹{max(t.amount for t in structured):,.2f}",
-                        deviation_delta=f"Split pattern evading CTR reporting threshold; cumulative total ₹{tot_struct:,.2f} INR",
+                        explanation=f"Income Tax Act Sec 269SS/269T Cash Loan Violation: Detected {len(structured)} cash transactions from '{sender}' totaling ₹{tot_struct:,.2f} INR, breaching Section 269SS statutory ceiling of ₹20,000 INR.",
+                        expected_baseline="Mandatory Banking Channel (NEFT/RTGS/Cheque) for loans/deposits ≥ ₹20,000 u/s 269SS.",
+                        observed_value=f"{len(structured)} cash deposits ranging from ₹{min(t.amount for t in structured):,.2f} to ₹{max(t.amount for t in structured):,.2f} INR",
+                        deviation_delta=f"Cash payment breaching statutory threshold; cumulative total ₹{tot_struct:,.2f} INR (Attracts 100% penalty u/s 271D)",
                         evidence_location=f"Docs: {', '.join(set(t.document_id for t in structured if t.document_id))}",
-                        audit_recommendation="File Suspicious Transaction Report (STR) with FIU-IND and audit cash deposit ledgers.",
+                        audit_recommendation="Report in Form 3CD Clause 31(a)/(b) for Section 271D/271E 100% penalty exposure.",
                         supporting_features={
                             "sender": sender,
                             "structured_count": len(structured),
@@ -147,11 +147,11 @@ class AnomalyEngine:
                         anomaly_score=0.85,
                         severity=AnomalySeverity.HIGH,
                         explanation=f"Duplicate transaction pattern: {len(dup_list)} identical transfers of ₹{sig[2]:,.2f} INR from '{sig[0]}' to '{sig[1]}'.",
-                        expected_baseline="Single unique payment entry per invoice/deliverable.",
+                        expected_baseline="Single unique payment entry per vendor invoice.",
                         observed_value=f"{len(dup_list)} identical payments of ₹{sig[2]:,.2f} INR",
-                        deviation_delta=f"Duplicate entry causing ₹{sig[2] * (len(dup_list)-1):,.2f} INR overstatement",
+                        deviation_delta=f"Duplicate debit entry causing ₹{sig[2] * (len(dup_list)-1):,.2f} INR overstatement",
                         evidence_location=f"Docs: {', '.join(set(t.document_id for t in dup_list if t.document_id))}",
-                        audit_recommendation="Verify bank scroll to check whether duplicate debit actually occurred or if ledger has duplicate entry.",
+                        audit_recommendation="Verify bank scroll statement to check whether duplicate debit occurred or if ledger requires reversal entry.",
                         supporting_features={
                             "duplicate_count": len(dup_list),
                             "amount": sig[2],
@@ -178,12 +178,12 @@ class AnomalyEngine:
                             anomaly_type=AnomalyCategory.SEGREGATION_OF_DUTIES,
                             anomaly_score=0.98,
                             severity=AnomalySeverity.CRITICAL,
-                            explanation=f"Segregation-of-Duties conflict: Officer '{person_name}' both issued and approved financial invoice/document.",
+                            explanation=f"ICAI SA 240 Fraud Risk & Internal Control Violation: Officer '{person_name}' both created/issued and approved tax invoice.",
                             expected_baseline="Independent Dual Control (Maker-Checker segregation).",
                             observed_value=f"Single Officer '{person_name}' performed Maker (Issued) AND Checker (Approved) roles.",
                             deviation_delta="100% breach of internal control segregation standards.",
                             evidence_location=f"Doc ID: {app.document_id} & {iss.document_id}",
-                            audit_recommendation="Flag in Form 3CD Internal Control Observations & request Board Audit Committee inquiry.",
+                            audit_recommendation="Report in Form 3CD Internal Audit Notes & request Board Audit Committee inquiry.",
                             supporting_features={"person_id": app.source_id, "evidence_app": app.evidence_text, "evidence_iss": iss.evidence_text},
                             evidence_documents=list(set([app.document_id, iss.document_id])),
                         )
@@ -202,12 +202,12 @@ class AnomalyEngine:
                             anomaly_type=AnomalyCategory.MISSING_DOCUMENTATION,
                             anomaly_score=0.78,
                             severity=AnomalySeverity.MEDIUM,
-                            explanation=f"High-value disbursement of ₹{tx.amount:,.2f} INR from '{tx.sender_name}' to '{tx.receiver_name}' lacks backing tax invoice or purchase order.",
-                            expected_baseline="Mandatory Tax Invoice, Purchase Order & E-Way bill for payments > ₹1,00,000.",
+                            explanation=f"High-value disbursement of ₹{tx.amount:,.2f} INR from '{tx.sender_name}' to '{tx.receiver_name}' lacks backing tax invoice, PO or e-Way bill.",
+                            expected_baseline="Mandatory Tax Invoice, Purchase Order & e-Way bill for payments > ₹1,00,000 INR.",
                             observed_value=f"Payment disbursement of ₹{tx.amount:,.2f} INR without attached invoice.",
                             deviation_delta="Unbacked disbursement lacking deliverable proof.",
                             evidence_location=f"Doc ID: {tx.document_id}",
-                            audit_recommendation="Disallow expenditure u/s 37(1) for lack of business proof until invoice is furnished.",
+                            audit_recommendation="Disallow expenditure u/s 37(1) for lack of business proof until tax invoice & e-Way bill are furnished.",
                             supporting_features={"amount": tx.amount, "sender": tx.sender_name, "receiver": tx.receiver_name},
                             evidence_documents=[tx.document_id] if tx.document_id else [],
                         )

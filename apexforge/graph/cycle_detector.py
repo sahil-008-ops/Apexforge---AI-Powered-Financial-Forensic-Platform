@@ -1,7 +1,7 @@
 """
 Circular Transaction Detection Engine
 Scans entity-transaction graphs to detect cyclic money flow patterns (A -> B -> C -> A)
-and produces detailed, explainable evidence reports.
+and produces detailed, explainable evidence reports in Indian Rupees (₹ INR).
 """
 
 import networkx as nx
@@ -19,17 +19,14 @@ class CycleDetector:
         """Detects simple cycles in the payment graph within specified length bounds."""
         g = self.graph_store.graph
         
-        # Build payment-only directed graph for pure financial entity flow
         payment_graph = nx.DiGraph()
         
         for u, v, data in g.edges(data=True):
             rel_type = data.get("relation_type", "")
             if rel_type in ["PAID", "TRANSFERRED_TO"]:
-                # If connecting entity -> transaction -> entity, resolve to direct entity connection
                 node_u_type = g.nodes[u].get("node_type", "")
                 node_v_type = g.nodes[v].get("node_type", "")
                 
-                # Exclude document nodes from cycle path
                 if node_u_type != "Document" and node_v_type != "Document":
                     amt = data.get("amount", 0.0)
                     dt = data.get("timestamp", "")
@@ -50,14 +47,11 @@ class CycleDetector:
         seen_cycle_keys = set()
 
         try:
-            # Find all simple cycles
             raw_cycles = list(nx.simple_cycles(payment_graph))
             
             for raw_cycle in raw_cycles:
                 cycle_len = len(raw_cycle)
                 if min_length <= cycle_len <= max_length:
-                    # Normalize cycle representation for deduplication
-                    # e.g., min element rotated to front
                     min_idx = raw_cycle.index(min(raw_cycle))
                     norm_cycle = tuple(raw_cycle[min_idx:] + raw_cycle[:min_idx])
                     
@@ -65,7 +59,6 @@ class CycleDetector:
                         continue
                     seen_cycle_keys.add(norm_cycle)
 
-                    # Gather detailed edge metadata
                     entities_involved = []
                     transactions_involved = []
                     timestamps = []
@@ -73,12 +66,10 @@ class CycleDetector:
                     evidence_list = []
                     total_amount = 0.0
 
-                    # Resolve human labels for entities
                     for node in raw_cycle:
                         lbl = g.nodes[node].get("label", node)
                         entities_involved.append(f"{lbl} ({node})")
 
-                    # Loop through cycle edges
                     for i in range(cycle_len):
                         u_node = raw_cycle[i]
                         v_node = raw_cycle[(i + 1) % cycle_len]
@@ -110,11 +101,11 @@ class CycleDetector:
                         cycle_length=cycle_len,
                         source_documents=list(source_docs),
                         evidence=evidence_list,
-                        risk_level="Anomalous Circular Payment Flow — Requires Forensic Verification",
+                        risk_level="CGST Sec 16(2)/132 Circular Trading — Requires Tax Reversal",
                         explanation=(
-                            f"Detected a {cycle_len}-step closed transaction loop totaling ${total_amount:,.2f}. "
-                            f"Funds originate from and return to the same entity cluster ({entities_involved[0]} -> ... -> {entities_involved[-1]}). "
-                            "This pattern is indicative of potential circular routing or pass-through transaction schemes."
+                            f"Detected a {cycle_len}-step closed transaction loop totaling ₹{total_amount:,.2f} INR. "
+                            f"Funds originate from and return to the same entity cluster ({entities_involved[0]} ➔ ... ➔ {entities_involved[-1]}). "
+                            "This pattern indicates potential GST round-tripping or bogus invoicing without actual supply under CGST Act Section 132."
                         ),
                     )
                     detected_cycles.append(cycle_obj)

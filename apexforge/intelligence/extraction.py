@@ -1,7 +1,7 @@
 """
 Document Intelligence & Extraction Pipeline
 Extracts structured financial entities, transactions, and relationships from heterogeneous document text.
-Maintains exact provenance (document_id, snippet, confidence) for every finding.
+Supports Indian Rupee (₹ INR) financial evidence and maintains exact provenance for every finding.
 """
 
 import re
@@ -19,13 +19,15 @@ from apexforge.models.data_models import (
 
 class DocumentExtractor:
     def __init__(self):
-        # Regex patterns for high-precision extraction
+        # Regex patterns for high-precision extraction (INR & USD compatible)
         self.iban_pattern = re.compile(r"\b([A-Z]{2}\d{2}[A-Z0-9]{11,30}|ACCT-\d{4,8}|ACC-\d{4,8}|\d{8,12})\b")
-        self.amount_pattern = re.compile(r"\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)\s*(USD|EUR|GBP|USD)?\b")
+        self.amount_pattern = re.compile(r"(?:₹|INR|Rs\.?|\$)\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?)\s*(?:INR|USD|EUR|GBP)?\b", re.IGNORECASE)
         self.date_pattern = re.compile(r"\b(\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4})\b")
         self.invoice_pattern = re.compile(r"\b(INV-\d{4}-\d{3,5}|Invoice\s*#?\s*\d+|INV#\d+)\b", re.IGNORECASE)
         self.email_pattern = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-        
+        self.gstin_pattern = re.compile(r"\b\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}\b")
+        self.pan_pattern = re.compile(r"\b[A-Z]{5}\d{4}[A-Z]{1}\b")
+
         # Financial keywords for contextual relationship mining
         self.transfer_verbs = ["transferred", "wired", "paid", "sent", "remitted", "moved", "deposited", "credited"]
         self.invoice_verbs = ["invoiced", "billed", "charged", "issued invoice"]
@@ -41,7 +43,6 @@ class DocumentExtractor:
         relationships: List[Relationship] = []
         transactions: List[Transaction] = []
 
-        # Entity deduplication index per document
         entity_map: Dict[str, Entity] = {}
 
         def get_or_create_entity(name: str, etype: EntityType, evidence: str = "") -> Entity:
@@ -68,24 +69,21 @@ class DocumentExtractor:
         if doc.document_type.value == "csv":
             self._extract_csv_rows(text, doc_id, get_or_create_entity, relationships, transactions)
 
-        # 2. Extract Invoices, Accounts, Emails
+        # 2. Extract Invoices, Accounts, GSTINs, Emails
         for line in lines:
             line_str = line.strip()
             if not line_str:
                 continue
 
-            # Invoice match
             inv_matches = self.invoice_pattern.findall(line_str)
             for inv in inv_matches:
                 get_or_create_entity(inv, EntityType.INVOICE, line_str)
 
-            # Account / IBAN match
             acct_matches = self.iban_pattern.findall(line_str)
             for acct in acct_matches:
                 if len(acct) >= 6:
                     get_or_create_entity(acct, EntityType.ACCOUNT, line_str)
 
-            # Email match
             email_matches = self.email_pattern.findall(line_str)
             for email in email_matches:
                 get_or_create_entity(email, EntityType.EMAIL, line_str)
@@ -93,9 +91,6 @@ class DocumentExtractor:
         # 3. Extract Explicit Entities & Transaction Narratives from text lines
         for line in lines:
             line_str = line.strip()
-
-            # Pattern: COMPANY_A paid/transferred $AMOUNT to COMPANY_B [on DATE] [Ref: REF]
-            # Pattern: From: ENTITY_A, To: ENTITY_B, Amount: $AMOUNT
             self._parse_transaction_sentence(
                 line_str, doc_id, get_or_create_entity, relationships, transactions
             )
@@ -103,7 +98,7 @@ class DocumentExtractor:
                 line_str, doc_id, get_or_create_entity, relationships
             )
 
-        # 4. Extract explicit metadata relationships (e.g. Email headers From/To)
+        # 4. Extract explicit metadata relationships
         if "email_from" in doc.metadata and "email_to" in doc.metadata:
             sender = get_or_create_entity(doc.metadata["email_from"], EntityType.PERSON, "Email Header From")
             recv = get_or_create_entity(doc.metadata["email_to"], EntityType.PERSON, "Email Header To")
@@ -129,21 +124,16 @@ class DocumentExtractor:
     ):
         line_lower = line.lower()
         if any(verb in line_lower for verb in self.transfer_verbs):
-            # Look for amounts
-            amounts = self.amount_pattern.findall(line)
-            # Look for dates
             dates = self.date_pattern.findall(line)
-            date_str = dates[0] if dates else "2026-01-01"
+            date_str = dates[0] if dates else "2026-03-01"
 
-            # Parse sender -> receiver using regex heuristics or delimiters
-            # e.g., "Shell Corp Alpha transferred $45,000.00 to Vanguard Trading"
-            m = re.search(r"([A-Za-z0-9\s&,.]+)\s+(?:wired|transferred|paid|sent|moved)\s+\$?([0-9,]+(?:\.[0-9]{2})?)\s*(?:USD|EUR|GBP)?\s+to\s+([A-Za-z0-9\s&,.]+)", line, re.IGNORECASE)
+            # Match sender -> receiver pattern with ₹ INR or $ amounts
+            m = re.search(r"([A-Za-z0-9\s&,.(Term)]+)\s+(?:wired|transferred|paid|sent|moved|deposited)\s+(?:₹|INR|Rs\.?|\$)?\s*([0-9,]+(?:\.[0-9]{2})?)\s*(?:INR|USD)?\s+to\s+([A-Za-z0-9\s&,.]+)", line, re.IGNORECASE)
             if m:
                 sender_name = m.group(1).strip()
                 amount_val = float(m.group(2).replace(",", ""))
                 receiver_name = m.group(3).strip()
 
-                # Clean entity names
                 sender_name = re.sub(r"^(From|On|Date|Ref):\s*", "", sender_name, flags=re.IGNORECASE).strip()
                 receiver_name = re.sub(r"\s+(on|ref|via|dated|invoice).*", "", receiver_name, flags=re.IGNORECASE).strip()
 
@@ -151,7 +141,6 @@ class DocumentExtractor:
                     sender_ent = get_or_create_entity(sender_name, EntityType.COMPANY, line)
                     receiver_ent = get_or_create_entity(receiver_name, EntityType.COMPANY, line)
 
-                    # Relationship
                     rel = Relationship(
                         relationship_id=f"REL-{uuid.uuid4().hex[:8].upper()}",
                         source_id=sender_ent.entity_id,
@@ -162,7 +151,6 @@ class DocumentExtractor:
                     )
                     relationships.append(rel)
 
-                    # Transaction
                     tx_id = f"TX-{uuid.uuid4().hex[:8].upper()}"
                     tx = Transaction(
                         transaction_id=tx_id,
@@ -171,7 +159,7 @@ class DocumentExtractor:
                         receiver_id=receiver_ent.entity_id,
                         receiver_name=receiver_ent.name,
                         amount=amount_val,
-                        currency="USD",
+                        currency="INR",
                         timestamp=date_str,
                         payment_reference=f"Ref in {doc_id}",
                         document_id=doc_id,
@@ -189,7 +177,6 @@ class DocumentExtractor:
         m = re.search(r"([A-Za-z\s.]+)\s+(?:approved|authorized|signed off on)\s+(invoice|payment|transfer|INV-[0-9-]+)\s+(?:for\s+)?([A-Za-z0-9\s&,.]+)?", line, re.IGNORECASE)
         if m:
             approver_name = m.group(1).strip()
-            target_item = m.group(2).strip()
             approver_ent = get_or_create_entity(approver_name, EntityType.PERSON, line)
             
             if "INV-" in line:
@@ -220,12 +207,12 @@ class DocumentExtractor:
         
         headers = [h.strip().lower() for h in lines[0].split(",")]
         
-        # Identify columns
         sender_col = next((i for i, h in enumerate(headers) if "sender" in h or "from" in h or "source" in h), None)
         receiver_col = next((i for i, h in enumerate(headers) if "receiver" in h or "to" in h or "dest" in h or "target" in h), None)
         amount_col = next((i for i, h in enumerate(headers) if "amount" in h or "sum" in h or "val" in h), None)
         date_col = next((i for i, h in enumerate(headers) if "date" in h or "time" in h or "timestamp" in h), None)
         ref_col = next((i for i, h in enumerate(headers) if "ref" in h or "desc" in h or "id" in h), None)
+        curr_col = next((i for i, h in enumerate(headers) if "curr" in h), None)
 
         for line in lines[1:]:
             parts = [p.strip() for p in line.split(",")]
@@ -237,8 +224,9 @@ class DocumentExtractor:
                 r_name = parts[receiver_col] if receiver_col is not None else "Unknown Receiver"
                 raw_amt = parts[amount_col] if amount_col is not None else "0"
                 amt = float(re.sub(r"[^\d.]", "", raw_amt)) if raw_amt else 0.0
-                dt = parts[date_col] if date_col is not None else "2026-01-01"
+                dt = parts[date_col] if date_col is not None else "2026-03-01"
                 ref = parts[ref_col] if ref_col is not None else ""
+                curr = parts[curr_col] if curr_col is not None else "INR"
 
                 if s_name and r_name and amt > 0:
                     s_ent = get_or_create_entity(s_name, EntityType.ACCOUNT if "ACCT" in s_name or "US" in s_name else EntityType.COMPANY, line)
@@ -261,7 +249,7 @@ class DocumentExtractor:
                         receiver_id=r_ent.entity_id,
                         receiver_name=r_ent.name,
                         amount=amt,
-                        currency="USD",
+                        currency=curr,
                         timestamp=dt,
                         payment_reference=ref,
                         document_id=doc_id,

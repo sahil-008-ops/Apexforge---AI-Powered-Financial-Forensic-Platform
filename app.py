@@ -1,8 +1,7 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
-Featuring All-Format Document Ingestion System, Non-Overlapping Interactive Graph Explorer,
-and Indian Income Tax (1961) & GST Act (2017) Chartered Accountant Audit Engine.
+Standardized on Indian Rupee (₹ INR) for Chartered Accountant (CA) Statutory Auditing, Form 3CD & GST Compliance.
 """
 
 import os
@@ -36,7 +35,7 @@ from apexforge.ca_audit.ca_tax_engine import IndianCATaxAuditEngine
 
 
 st.set_page_config(
-    page_title="ApexForge — Forensic Tracing & CA Audit Platform",
+    page_title="ApexForge — Indian CA Forensic & Tax Audit Platform",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -90,12 +89,12 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.1")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.2 (₹ INR Standard)")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
-if st.sidebar.button("🚀 Run 50-Doc Fraud Benchmark", use_container_width=True):
-    with st.spinner("Executing multi-agent investigation across 50 benchmark documents..."):
+if st.sidebar.button("🚀 Run 50-Doc Fraud Benchmark (₹ INR)", use_container_width=True):
+    with st.spinner("Executing CA investigation across 50 benchmark documents..."):
         gen = SyntheticDataGenerator(seed=42)
         docs = gen.generate_benchmark_dataset()
         orch = get_orchestrator()
@@ -124,7 +123,7 @@ ledger = results["ledger"]
 
 # Header
 st.markdown('<div class="main-header">🛡️ APEXFORGE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing, Transaction Tracing & CA Tax Compliance Platform</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing, Transaction Tracing & Indian CA Tax Audit Platform</div>', unsafe_allow_html=True)
 
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -141,7 +140,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 # TAB 1: EXECUTIVE SUMMARY
 # ==============================================================================
 with tab1:
-    st.header("Executive Investigation Overview")
+    st.header("Executive Audit Investigation Overview")
     
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     total_vol = sum(t.amount for t in transactions)
@@ -150,12 +149,12 @@ with tab1:
     col1.metric("Ingested Docs", len(docs))
     col2.metric("Extracted Entities", len(entities))
     col3.metric("Transactions", len(transactions))
-    col4.metric("Total Volume ($)", f"${total_vol:,.0f}")
+    col4.metric("Total Volume (₹)", f"₹{total_vol:,.0f}")
     col5.metric("Circular Loops", len(cycles), delta=f"{len(cycles)} loops", delta_color="inverse")
     col6.metric("Critical Anomalies", crit_count, delta=f"{crit_count} Critical", delta_color="inverse")
     
     st.markdown("---")
-    st.subheader("🤖 Executive Narrative Summary")
+    st.subheader("🤖 Executive Forensic Narrative Summary")
     st.info(narrative.executive_summary)
     
     col_left, col_right = st.columns(2)
@@ -254,7 +253,7 @@ with tab3:
             default=["Company", "Account", "Person", "Invoice"]
         )
     with fc2:
-        min_tx_val = st.slider("Min Transaction Value ($)", 0, 100000, 0, step=5000)
+        min_tx_val = st.slider("Min Transaction Value (₹)", 0, 1000000, 0, step=50000)
     with fc3:
         node_spacing = st.slider("Force Separation Distance", 1, 10, 5)
 
@@ -333,7 +332,7 @@ with tab3:
                 if "document_id" in data:
                     title_tooltip += f"<br>Doc: {data['document_id']}"
                 if "amount" in data:
-                    title_tooltip += f"<br>Amount: ${data['amount']:,.2f}"
+                    title_tooltip += f"<br>Amount: ₹{data['amount']:,.2f} INR"
 
                 net.add_node(
                     node,
@@ -347,8 +346,8 @@ with tab3:
             for u, v, d in g_sub.edges(data=True):
                 rel = d.get("relation_type", "TRANSFERRED")
                 amt = d.get("amount", 0.0)
-                edge_label = f"${amt:,.0f}" if amt > 0 else rel
-                edge_title = f"{rel}: ${amt:,.2f}" if amt > 0 else rel
+                edge_label = f"₹{amt:,.0f}" if amt > 0 else rel
+                edge_title = f"{rel}: ₹{amt:,.2f}" if amt > 0 else rel
                 net.add_edge(u, v, label=edge_label, title=edge_title)
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
@@ -467,7 +466,7 @@ with tab4:
             cycle_table.append({
                 "Cycle ID": c.cycle_id,
                 "Cycle Path": " ➔ ".join([e.split(" ")[0] for e in c.entities_involved]),
-                "Total Amount": f"${c.total_amount:,.2f}",
+                "Total Volume (₹)": f"₹{c.total_amount:,.2f}",
                 "Hop Length": c.cycle_length,
                 "Risk Classification": c.risk_level,
                 "Source Docs": ", ".join(c.source_documents),
@@ -493,7 +492,7 @@ with tab4:
     st.dataframe(pd.DataFrame(anomaly_data), use_container_width=True)
 
 # ==============================================================================
-# TAB 5: INDIAN CA TAX AUDIT & STATUTORY COMPLIANCE (NEW DOMAIN MODULE)
+# TAB 5: INDIAN CA TAX AUDIT & STATUTORY COMPLIANCE (100% UNIFIED DATASET)
 # ==============================================================================
 with tab5:
     st.header("🇮🇳 Indian Income Tax (1961) & GST Act (2017) CA Audit Module")
@@ -622,10 +621,10 @@ with tab7:
             st.rerun()
 
     st.markdown("---")
-    st.subheader("📄 Full Forensic Investigation Report")
+    st.subheader("📄 Full Forensic Audit Investigation Report")
     
     report_text = f"""# FORENSIC AUDIT INVESTIGATION REPORT
-**Generated by ApexForge Platform**
+**Generated by ApexForge CA Audit Platform**
 **Date:** 2026-03-26
 
 ## EXECUTIVE SUMMARY

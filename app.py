@@ -84,9 +84,13 @@ def initialize_session():
     else:
         results = st.session_state["results"]
         if "anomalies" in results and results["anomalies"]:
-            first_a = results["anomalies"][0]
-            if not hasattr(first_a, "expected_baseline") or not hasattr(first_a, "status"):
-                should_reset = True
+            for a in results["anomalies"]:
+                # Reset cached session state if old dollar signs or generic fallbacks exist
+                exp = getattr(a, "expected_baseline", "")
+                expl = getattr(a, "explanation", "")
+                if "$" in expl or "$" in exp or not exp or exp == "Standard Indian Statutory Compliance Benchmark":
+                    should_reset = True
+                    break
 
     if should_reset:
         gen = SyntheticDataGenerator(seed=42)
@@ -100,7 +104,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.7")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.8 (INR Standard)")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -500,17 +504,20 @@ with tab4:
             return
 
         for idx, a in enumerate(anomaly_group):
-            exp_base = getattr(a, "expected_baseline", "") or "Standard Indian Statutory Compliance Benchmark"
-            obs_val = getattr(a, "observed_value", "") or "Actual Recorded Evidence Transaction Payload"
-            dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established statutory threshold"
-            ev_loc = getattr(a, "evidence_location", "") or ", ".join(a.evidence_documents)
-            aud_rec = getattr(a, "audit_recommendation", "") or "Audit evidence document and verify compliance."
+            exp_base = getattr(a, "expected_baseline", "") or "Linear commercial supply chain flow u/s 16(2) / Income Tax Act baseline"
+            obs_val = getattr(a, "observed_value", "") or f"Recorded Evidence Payload (Amount: ₹{a.supporting_features.get('amount', 0):,.2f} INR)"
+            dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established CGST / Income Tax statutory threshold"
+            ev_loc = getattr(a, "evidence_location", "") or f"Doc ID: {', '.join(a.evidence_documents)}"
+            aud_rec = getattr(a, "audit_recommendation", "") or "Audit evidence document and issue Form 3CD Clause 21(b)/31(a) qualification."
             astatus = getattr(a, "status", "OPEN")
 
             status_badge = "🟢 CORRECTED" if astatus != "OPEN" else "🔴 OPEN VARIANCE"
 
+            # Clean explanation from old dollar signs if any remain in text
+            clean_explanation = a.explanation.replace("$", "₹")
+
             with st.expander(f"[{a.severity.value}] {a.anomaly_type.value} — ID: {a.anomaly_id} ({status_badge})", expanded=(idx < 2)):
-                st.markdown(f"**Explanation:** {a.explanation}")
+                st.markdown(f"**Explanation:** {clean_explanation}")
                 
                 st.markdown("##### 📊 Forensic Deviation Breakdown (Where Transaction Defers)")
                 d1, d2 = st.columns(2)

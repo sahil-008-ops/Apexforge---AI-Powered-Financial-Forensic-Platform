@@ -73,18 +73,6 @@ st.markdown(
         margin-bottom: 15px;
         border-left: 5px solid #1E88E5;
     }
-    .deviation-critical {
-        border-left: 5px solid #D32F2F !important;
-    }
-    .deviation-high {
-        border-left: 5px solid #F57C00 !important;
-    }
-    .deviation-medium {
-        border-left: 5px solid #FBC02D !important;
-    }
-    .deviation-low {
-        border-left: 5px solid #388E3C !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -97,8 +85,18 @@ def get_orchestrator():
 
 
 def initialize_session():
+    # Force re-initialization if results missing or older cached schema present
+    should_reset = False
     if "results" not in st.session_state:
-        # Auto-run 50-document synthetic benchmark on startup
+        should_reset = True
+    else:
+        results = st.session_state["results"]
+        if "anomalies" in results and results["anomalies"]:
+            first_a = results["anomalies"][0]
+            if not hasattr(first_a, "expected_baseline"):
+                should_reset = True
+
+    if should_reset:
         gen = SyntheticDataGenerator(seed=42)
         docs = gen.generate_benchmark_dataset()
         orch = get_orchestrator()
@@ -110,7 +108,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.3")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.4")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -475,13 +473,12 @@ with tab3:
                 st.warning("No direct path found within 6 hops.")
 
 # ==============================================================================
-# TAB 4: SEGREGATED ANOMALIES & DEVIATION ROOT CAUSE ANALYSIS (NEW SEVERITY TAB)
+# TAB 4: SEGREGATED ANOMALIES & DEVIATION ROOT CAUSE ANALYSIS
 # ==============================================================================
 with tab4:
     st.header("🚨 Segregated Anomaly & Forensic Deviation Engine")
     st.caption("Anomalies grouped by Severity Tiers with Baseline vs. Observed Deviation Analysis & Document Location Pointers.")
 
-    # Severity Tier Filter Cards
     crit_list = [a for a in anomalies if a.severity == AnomalySeverity.CRITICAL]
     high_list = [a for a in anomalies if a.severity == AnomalySeverity.HIGH]
     med_list = [a for a in anomalies if a.severity == AnomalySeverity.MEDIUM]
@@ -510,28 +507,26 @@ with tab4:
             return
 
         for idx, a in enumerate(anomaly_group):
-            sev_class = f"deviation-{a.severity.value.lower()}"
-            badge_color = {
-                "CRITICAL": "🔴 #D32F2F",
-                "HIGH": "🟠 #F57C00",
-                "MEDIUM": "🟡 #FBC02D",
-                "LOW": "🟢 #388E3C",
-            }.get(a.severity.value, "#888888")
+            # Safe attribute access for backwards-compatibility with cached session state
+            exp_base = getattr(a, "expected_baseline", "") or "Standard Business Policy Benchmark"
+            obs_val = getattr(a, "observed_value", "") or "Actual Recorded Transaction Payload"
+            dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established compliance threshold"
+            ev_loc = getattr(a, "evidence_location", "") or ", ".join(a.evidence_documents)
+            aud_rec = getattr(a, "audit_recommendation", "") or "Audit evidence document and verify compliance."
 
             with st.expander(f"[{a.severity.value}] {a.anomaly_type.value} — ID: {a.anomaly_id} (Score: {a.anomaly_score:.2f})", expanded=(idx < 2)):
                 st.markdown(f"**Explanation:** {a.explanation}")
                 
-                # 2x2 Forensic Deviation Matrix
                 st.markdown("##### 📊 Forensic Deviation Breakdown (Where Transaction Defers)")
                 d1, d2 = st.columns(2)
                 with d1:
-                    st.markdown(f"🎯 **Expected Statutory Baseline:** `{a.expected_baseline or 'Standard Business Policy Benchmark'}`")
-                    st.markdown(f"🔍 **Observed Evidence Value:** `{a.observed_value or 'Actual Recorded Transaction Payload'}`")
+                    st.markdown(f"🎯 **Expected Statutory Baseline:** `{exp_base}`")
+                    st.markdown(f"🔍 **Observed Evidence Value:** `{obs_val}`")
                 with d2:
-                    st.markdown(f"📈 **Variance / Deviation Delta:** `{a.deviation_delta or 'Deviates from established compliance threshold'}`")
-                    st.markdown(f"📍 **Evidence Document Pointer:** `{a.evidence_location or ', '.join(a.evidence_documents)}`")
+                    st.markdown(f"📈 **Variance / Deviation Delta:** `{dev_delta}`")
+                    st.markdown(f"📍 **Evidence Document Pointer:** `{ev_loc}`")
 
-                st.markdown(f"💡 **CA Audit Recommendation:** {a.audit_recommendation or 'Audit evidence document and verify compliance.'}")
+                st.markdown(f"💡 **CA Audit Recommendation:** {aud_rec}")
 
     with s_tab1:
         render_anomaly_cards(anomalies)

@@ -1,7 +1,7 @@
 """
 Section 8: RAG Policy Library & Verification Vector Store
 Indexes internal financial policies, procurement controls, segregation-of-duties rules,
-and audit case precedents into ChromaDB (with TF-IDF / vector fallback) to evaluate compliance.
+Indian Income Tax Act (1961) sections, CGST Act (2017) provisions, and audit case precedents into ChromaDB.
 """
 
 import uuid
@@ -21,17 +21,60 @@ class RAGPolicyStore:
         self._setup_vector_store()
 
     def _initialize_default_policies(self):
-        """Default internal financial policies and forensic control standards."""
+        """Default financial policies and Indian Income Tax / GST statutory provisions."""
         self.policies = [
+            {
+                "id": "IND-TAX-269SS",
+                "title": "Indian Income Tax Act (1961) — Section 269SS / 269T Cash Loan Restrictions",
+                "section": "Section 269SS & Section 269T (Mode of Accepting / Repaying Loans & Deposits)",
+                "content": (
+                    "No person shall accept or repay any loan, deposit, or specified advance of ₹20,000.00 INR or more "
+                    "otherwise than by an account payee cheque, account payee bank draft, or electronic clearing system. "
+                    "Contravention attracts 100% statutory penalty under Section 271D / 271E equal to the amount of loan/deposit."
+                ),
+                "category": "Indian Statutory Income Tax",
+            },
+            {
+                "id": "IND-TAX-40A3",
+                "title": "Indian Income Tax Act (1961) — Section 40A(3) Cash Expense Disallowance",
+                "section": "Section 40A(3) read with Rule 6DD (Disallowance of Cash Expenditure)",
+                "content": (
+                    "Where an assessee incurs any expenditure in respect of which payment is made in a single day to a person "
+                    "otherwise than by account payee cheque/bank draft/ECS exceeding ₹10,000.00 INR, 100% of such expenditure "
+                    "shall be disallowed as a deduction from business income under Section 40A(3)."
+                ),
+                "category": "Indian Statutory Income Tax",
+            },
+            {
+                "id": "IND-TAX-SEC68",
+                "title": "Indian Income Tax Act (1961) — Section 68 / 115BBE Unexplained Credits",
+                "section": "Section 68 read with Section 115BBE (Unexplained Cash Credits)",
+                "content": (
+                    "Where any sum is found credited in the books of an assessee and the assessee offers no explanation about the "
+                    "nature and source thereof, the sum is charged to income-tax u/s 68 at a flat rate of 60% tax + 25% surcharge "
+                    "+ 4% cess (effective 78% tax rate) u/s 115BBE without allowance of any expenditure or set-off."
+                ),
+                "category": "Indian Statutory Income Tax",
+            },
+            {
+                "id": "IND-GST-SEC16",
+                "title": "CGST Act (2017) — Section 16(2) & Sec 132 Fake Invoicing & ITC Fraud",
+                "section": "Section 16(2)(c) & Section 132(1)(b) (Input Tax Credit & Circular Trading Offenses)",
+                "content": (
+                    "Input Tax Credit (ITC) shall only be eligible if tax charged in respect of supply has been actually paid to the Government "
+                    "and goods/services are physically received. Issuing invoices or participating in circular trading loops without actual supply "
+                    "is a non-bailable cognizable offense u/s 132(1)(b) attracting ITC reversal with 24% interest u/s 50 and 100% penalty u/s 122."
+                ),
+                "category": "Indian Statutory GST Act",
+            },
             {
                 "id": "POL-CTR-001",
                 "title": "Currency Transaction & Anti-Smurfing Threshold Policy",
                 "section": "Section 4.1 — Mandatory CTR Reporting",
                 "content": (
-                    "All single or aggregated financial transactions exceeding $10,000.00 USD within a 24-hour period "
-                    "must be reported via Currency Transaction Reports (CTR). Intentionally structuring, splitting, "
-                    "or breaking up payments into multiple transfers under $10,000.00 to avoid regulatory reporting (smurfing) "
-                    "is strictly prohibited under Policy FIN-401 and Federal AML regulations."
+                    "All single or aggregated financial transactions exceeding $10,000.00 USD (or equivalent INR ₹800,000) within 24 hours "
+                    "must be reported via Currency Transaction Reports (CTR). Intentionally structuring payments into multiple transfers "
+                    "under statutory limits (smurfing) is strictly prohibited under Federal & Indian AML regulations."
                 ),
                 "category": "Anti-Money Laundering",
             },
@@ -42,39 +85,17 @@ class RAGPolicyStore:
                 "content": (
                     "No single individual or officer shall have the authority to both issue/create an invoice and "
                     "approve or execute the payment disbursement for that same invoice or vendor account. "
-                    "Approval must be granted by an independent authorized signatory with appropriate financial threshold limits."
+                    "Approval must be granted by an independent authorized signatory."
                 ),
-                "category": "Internal Audit",
-            },
-            {
-                "id": "POL-PROC-003",
-                "title": "Corporate Procurement & Vendor Verification Policy",
-                "section": "Section 6.2 — Backing Documentation Requirements",
-                "content": (
-                    "All corporate disbursements exceeding $5,000.00 USD must be backed by a verified Purchase Order (PO), "
-                    "an itemized Vendor Invoice, and written proof of receipt/deliverable verification. Payments made to "
-                    "unverified counterparties or shell entities lacking a physical business address are strictly prohibited."
-                ),
-                "category": "Procurement Controls",
-            },
-            {
-                "id": "POL-CIRC-004",
-                "title": "Related Party Transactions & Circular Financing Prohibition",
-                "section": "Section 8.4 — Circular Cash Flow Prevention",
-                "content": (
-                    "Circular money movements where funds are transferred through intermediary shell entities, subsidiaries, "
-                    "or offshore accounts only to return to the originating entity cluster are classified as high-risk anomalous loops. "
-                    "Any circular transaction pattern lacking clear commercial substance must be immediately frozen and audited."
-                ),
-                "category": "Financial Crime Prevention",
+                "category": "Internal Audit & ICAI SA 240",
             },
             {
                 "id": "CASE-PREC-101",
                 "title": "Forensic Precedent — State v. Vanguard Shell Network (2024)",
                 "section": "Precedent Case #2024-889",
                 "content": (
-                    "In State v. Vanguard, defendants utilized 3 layer shell companies to transfer $1.2M in round-trip wire payments. "
-                    "The court established that identical dollar amounts flowing in a closed loop across related accounts within 48 hours "
+                    "In State v. Vanguard, defendants utilized 3 layer shell companies to transfer funds in round-trip wire payments. "
+                    "The court established that identical amounts flowing in a closed loop across related accounts within 48 hours "
                     "constitutes prima facie evidence of illegitimate circular transaction routing."
                 ),
                 "category": "Audit Case Precedents",

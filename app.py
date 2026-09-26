@@ -1,7 +1,8 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
-Featuring All-Format Document Ingestion System & Non-Overlapping Interactive Graph Explorer
+Featuring All-Format Document Ingestion System, Non-Overlapping Interactive Graph Explorer,
+and Indian Income Tax (1961) & GST Act (2017) Chartered Accountant Audit Engine.
 """
 
 import os
@@ -31,10 +32,11 @@ from apexforge.generator.synthetic_data import SyntheticDataGenerator
 from apexforge.agents.orchestrator import ForensicOrchestrator
 from apexforge.graph.graph_store import TransactionGraphStore
 from apexforge.rag.policy_store import RAGPolicyStore
+from apexforge.ca_audit.ca_tax_engine import IndianCATaxAuditEngine
 
 
 st.set_page_config(
-    page_title="ApexForge — Forensic Transaction Tracing Platform",
+    page_title="ApexForge — Forensic Tracing & CA Audit Platform",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -55,19 +57,12 @@ st.markdown(
         color: #888888;
         margin-bottom: 20px;
     }
-    .metric-card {
-        background-color: #1E222A;
-        border-radius: 8px;
-        padding: 15px;
-        border-left: 4px solid #1E88E5;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
     .stTabs [data-baseweb="tab"] {
-        padding-left: 16px;
-        padding-right: 16px;
+        padding-left: 14px;
+        padding-right: 14px;
         border-radius: 4px;
     }
     </style>
@@ -95,7 +90,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI-Powered Forensic Tracing Engine v1.0")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.1")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -123,19 +118,21 @@ graph_store: TransactionGraphStore = results["graph_store"]
 cycles: List[TransactionCycle] = results["cycles"]
 anomalies: List[AnomalyFinding] = results["anomalies"]
 policy_findings: List[PolicyFinding] = results["policy_findings"]
+ca_audit_results: Dict[str, Any] = results.get("ca_audit_results", {})
 narrative = results["narrative"]
 ledger = results["ledger"]
 
 # Header
 st.markdown('<div class="main-header">🛡️ APEXFORGE</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing & Transaction Tracing Platform</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing, Transaction Tracing & CA Tax Compliance Platform</div>', unsafe_allow_html=True)
 
 # Navigation Tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 Executive Summary",
     "📁 Multi-File Ingestion",
     "🕸️ Clean Transaction Graph",
     "🔄 Cycles & Anomalies",
+    "🇮🇳 CA Tax Audit (Income Tax & GST)",
     "📜 Policy RAG Verification",
     "🔐 Audit Ledger & Report",
 ])
@@ -188,7 +185,6 @@ with tab2:
     st.header("Universal Document Ingestion System")
     st.caption("Upload financial evidence files of ANY format (.PDF, .CSV, .XLSX, .DOCX, .TXT, .EML, .JSON, Images, .LOG, etc.)")
     
-    # Universal file uploader without restrictions
     uploaded_files = st.file_uploader(
         "Upload Financial Evidence Files (Any File Extension Supported)",
         type=None,
@@ -248,7 +244,6 @@ with tab3:
     st.header("Clean Entity-Transaction Network Graph")
     st.caption("Visualizes relationships and payment routing with zero node overlap using force-directed physics layout.")
 
-    # Graph Filters
     st.markdown("#### ⚙️ Graph Filtering & Layout Controls")
     fc1, fc2, fc3 = st.columns(3)
     
@@ -263,7 +258,6 @@ with tab3:
     with fc3:
         node_spacing = st.slider("Force Separation Distance", 1, 10, 5)
 
-    # Build filtered subgraph
     g_raw = graph_store.graph
     sub_nodes = []
     for n, data in g_raw.nodes(data=True):
@@ -274,7 +268,6 @@ with tab3:
 
     g_sub = g_raw.subgraph(sub_nodes).copy()
 
-    # Filter edges by minimum transaction amount if transaction node or edge amount exists
     if min_tx_val > 0:
         remove_edges = []
         for u, v, d in g_sub.edges(data=True):
@@ -283,14 +276,11 @@ with tab3:
                 remove_edges.append((u, v))
         g_sub.remove_edges_from(remove_edges)
 
-    # ENGINE CHOICE 1: PYVIS PHYSICS INTERACTIVE (Zero Overlap)
     if "Pyvis" in graph_engine_choice:
         try:
             from pyvis.network import Network
 
             net = Network(height="650px", width="100%", bgcolor="#0E1117", font_color="white", directed=True)
-            
-            # Configure Barnes-Hut repulsion physics to strictly prevent node overlap
             physics_config = {
                 "physics": {
                     "barnesHut": {
@@ -325,14 +315,13 @@ with tab3:
             }
             net.set_options(json.dumps(physics_config))
 
-            # Add nodes with distinct color codes and non-overlapping tooltips
             color_map = {
-                "Company": "#1E88E5",      # Blue
-                "Account": "#D32F2F",      # Red
-                "Person": "#388E3C",       # Green
-                "Invoice": "#FBC02D",      # Yellow
-                "Transaction": "#F57C00",  # Orange
-                "Document": "#7B1FA2",     # Purple
+                "Company": "#1E88E5",
+                "Account": "#D32F2F",
+                "Person": "#388E3C",
+                "Invoice": "#FBC02D",
+                "Transaction": "#F57C00",
+                "Document": "#7B1FA2",
             }
 
             for node, data in g_sub.nodes(data=True):
@@ -355,16 +344,13 @@ with tab3:
                     size=22 if ntype == "Company" else 16
                 )
 
-            # Add edges
             for u, v, d in g_sub.edges(data=True):
                 rel = d.get("relation_type", "TRANSFERRED")
                 amt = d.get("amount", 0.0)
                 edge_label = f"${amt:,.0f}" if amt > 0 else rel
                 edge_title = f"{rel}: ${amt:,.2f}" if amt > 0 else rel
-
                 net.add_edge(u, v, label=edge_label, title=edge_title)
 
-            # Render HTML string and embed inside Streamlit
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
                 net.save_graph(tmp.name)
                 with open(tmp.name, "r", encoding="utf-8") as f:
@@ -375,7 +361,6 @@ with tab3:
         except Exception as e:
             st.error(f"Pyvis rendering error: {e}. Falling back to Plotly engine.")
 
-    # ENGINE CHOICE 2: PLOTLY HIGH-SPACING ENGINE
     else:
         k_factor = 3.5 * (node_spacing / 5.0) / (np.sqrt(max(1, g_sub.number_of_nodes())))
         pos = nx.spring_layout(g_sub, k=k_factor, iterations=120, seed=42)
@@ -508,17 +493,82 @@ with tab4:
     st.dataframe(pd.DataFrame(anomaly_data), use_container_width=True)
 
 # ==============================================================================
-# TAB 5: POLICY RAG VERIFICATION
+# TAB 5: INDIAN CA TAX AUDIT & STATUTORY COMPLIANCE (NEW DOMAIN MODULE)
 # ==============================================================================
 with tab5:
+    st.header("🇮🇳 Indian Income Tax (1961) & GST Act (2017) CA Audit Module")
+    st.caption("Assists Chartered Accountants (CAs) during Statutory Audit, Tax Audit u/s 44AB (Form 3CD), and GST Fraud Risk Analysis.")
+
+    metrics = ca_audit_results.get("summary_metrics", {})
+    
+    # Statutory KPI Metrics (in INR ₹)
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Sec 40A(3) Disallowance", f"₹{metrics.get('total_sec_40a3_disallowance', 0):,.2f}", delta="Tax Audit Clause 21(b)", delta_color="inverse")
+    m2.metric("Sec 269SS/269T Risk", f"₹{metrics.get('total_sec_269ss_penalty_exposure', 0):,.2f}", delta="Clause 31(a)/(b) 100% Penalty", delta_color="inverse")
+    m3.metric("GST Circular ITC Risk", f"₹{metrics.get('total_gst_circular_itc_at_risk', 0):,.2f}", delta="CGST Sec 16(2)/132", delta_color="inverse")
+    m4.metric("Total Tax Audit Findings", metrics.get("total_flagged_tax_items", 0), delta="ICAI SA 240 Fraud Risk")
+
+    st.markdown("---")
+    st.subheader("📋 Form 3CD Tax Audit Report Clause Mappings")
+
+    c_tab1, c_tab2, c_tab3 = st.tabs([
+        "Clause 21(b): Sec 40A(3) Cash Disallowance",
+        "Clause 31(a)/(b): Sec 269SS/269T Cash Loans",
+        "CGST Act: Circular Trading & ITC Reversal",
+    ])
+
+    with c_tab1:
+        st.markdown("**Income Tax Act, 1961 — Section 40A(3) Cash Payments Exceeding ₹10,000/day**")
+        c21b = ca_audit_results.get("form_3cd_clause_21b", [])
+        if c21b:
+            st.dataframe(pd.DataFrame(c21b), use_container_width=True)
+        else:
+            st.success("No Section 40A(3) cash disallowances detected in audited evidence.")
+
+    with c_tab2:
+        st.markdown("**Income Tax Act, 1961 — Section 269SS & 269T Cash Loans/Deposits Accepted or Repaid >= ₹20,000**")
+        c31a = ca_audit_results.get("form_3cd_clause_31a", [])
+        c31b = ca_audit_results.get("form_3cd_clause_31b", [])
+        combined_31 = c31a + c31b
+        if combined_31:
+            st.dataframe(pd.DataFrame(combined_31), use_container_width=True)
+        else:
+            st.success("No Section 269SS/269T cash loan violations detected.")
+
+    with c_tab3:
+        st.markdown("**CGST Act, 2017 — Circular Trading & Bogus Invoice Input Tax Credit (ITC) Fraud u/s 16(2)(c) & Sec 132**")
+        gst_r = ca_audit_results.get("gst_itc_risks", [])
+        if gst_r:
+            st.dataframe(pd.DataFrame(gst_r), use_container_width=True)
+        else:
+            st.success("No circular trading ITC risks detected under GST Laws.")
+
+    st.markdown("---")
+    st.subheader("📄 Export ICAI SA 240/250 Tax Audit Working Paper (W/P)")
+    
+    ca_engine = IndianCATaxAuditEngine()
+    wp_markdown = ca_engine.generate_ca_working_paper_md(ca_audit_results, entity_name="Audited Client Assessee", ay="2026-27")
+    
+    st.download_button(
+        label="📥 Download Official CA Tax Audit Working Paper (.MD)",
+        data=wp_markdown,
+        file_name="CA_Tax_Audit_Working_Paper_AY2026-27.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
+
+# ==============================================================================
+# TAB 6: POLICY RAG VERIFICATION
+# ==============================================================================
+with tab6:
     st.header("RAG Policy Verification & Compliance Engine")
     
-    st.subheader("🔍 Query Internal Policy Vector Database (ChromaDB)")
-    policy_query = st.text_input("Enter natural language policy query:", "smurfing CTR threshold structuring invoice approval segregation of duties")
+    st.subheader("🔍 Query Internal & Statutory Policy Vector Database (ChromaDB)")
+    policy_query = st.text_input("Enter statutory policy query (Income Tax / GST / AML):", "Section 269SS Section 40A(3) GST circular trading ITC disallowance")
     
     if policy_query:
         p_store = get_orchestrator().policy_store
-        retrieved = p_store.search_policies(policy_query, top_k=3)
+        retrieved = p_store.search_policies(policy_query, top_k=4)
         
         for idx, res in enumerate(retrieved):
             with st.expander(f"📌 [{res['relevance_score']:.2f} Relevance] {res['title']} ({res['section']})"):
@@ -539,9 +589,9 @@ with tab5:
     st.dataframe(pd.DataFrame(policy_table), use_container_width=True)
 
 # ==============================================================================
-# TAB 6: AUDIT LEDGER & REPORT
+# TAB 7: AUDIT LEDGER & REPORT
 # ==============================================================================
-with tab6:
+with tab7:
     st.header("Forensic Audit Ledger & Report")
     
     col_l1, col_l2 = st.columns([2, 1])

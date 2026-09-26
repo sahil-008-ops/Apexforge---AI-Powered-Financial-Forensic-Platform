@@ -1,6 +1,6 @@
 """
 Multi-Agent Orchestrator Engine
-Coordinates the execution state-machine across all 5 agents (Extraction, Linker, Anomaly, Policy, Reasoner)
+Coordinates the execution state-machine across all forensic agents (Extraction, Linker, Anomaly, Policy, Reasoner, CA Tax Audit)
 and writes tamper-evident SHA3-256 audit ledger entries at each state transition.
 """
 
@@ -24,6 +24,7 @@ from apexforge.agents.linker_agent import LinkerAgent
 from apexforge.agents.anomaly_agent import AnomalyAgent
 from apexforge.agents.policy_agent import PolicyAgent
 from apexforge.agents.reasoner_agent import ReasonerAgent
+from apexforge.ca_audit.ca_tax_engine import IndianCATaxAuditEngine
 
 
 class ForensicOrchestrator:
@@ -37,6 +38,7 @@ class ForensicOrchestrator:
         self.anomaly_agent = AnomalyAgent(self.graph_store)
         self.policy_agent = PolicyAgent(self.policy_store)
         self.reasoner_agent = ReasonerAgent()
+        self.ca_tax_engine = IndianCATaxAuditEngine()
 
     def run_investigation_pipeline(self, documents: List[NormalizedDocument]) -> Dict[str, Any]:
         """Runs full multi-agent investigation workflow over ingested documents."""
@@ -85,7 +87,21 @@ class ForensicOrchestrator:
             evidence=[c.cycle_id for c in cycles] + [a.anomaly_id for a in anomalies[:5]],
         )
 
-        # Stage 4: Policy / Verification Agent
+        # Stage 4: Indian Income Tax & GST CA Audit Compliance Engine
+        ca_audit_results = self.ca_tax_engine.evaluate_indian_tax_compliance(
+            transactions=transactions,
+            entities=entities,
+            relationships=relationships,
+            cycles=cycles,
+        )
+        self.ledger.add_entry(
+            event_type="CA_STATUTORY_TAX_AUDIT_COMPLETE",
+            input_reference="Indian CA Income Tax & GST Compliance Engine",
+            finding=f"Evaluated Indian Income Tax & GST Laws: {ca_audit_results['summary_metrics']['total_flagged_tax_items']} statutory tax compliance findings identified.",
+            evidence=[f"Sec 40A(3) Disallowance: ₹{ca_audit_results['summary_metrics']['total_sec_40a3_disallowance']:,.2f}"],
+        )
+
+        # Stage 5: Policy / Verification Agent
         policy_findings = self.policy_agent.verify_anomalies_against_policies(anomalies)
         self.ledger.add_entry(
             event_type="AGENT_4_POLICY_VERIFICATION_COMPLETE",
@@ -94,7 +110,7 @@ class ForensicOrchestrator:
             evidence=[pf.citation for pf in policy_findings[:5]],
         )
 
-        # Stage 5: Reasoner Agent
+        # Stage 6: Reasoner Agent
         narrative = self.reasoner_agent.synthesize_narrative(
             documents=documents,
             entities=entities,
@@ -120,6 +136,7 @@ class ForensicOrchestrator:
             "cycles": cycles,
             "anomalies": anomalies,
             "policy_findings": policy_findings,
+            "ca_audit_results": ca_audit_results,
             "narrative": narrative,
             "ledger": self.ledger,
         }

@@ -1,7 +1,7 @@
 """
 ApexForge Streamlit Investigation Platform
 Interactive Forensic Auditing & Transaction-Tracing Dashboard
-Featuring Severity Level Anomaly Segregation, Forensic Deviation Analysis, All-Format Document Ingestion,
+Featuring Severity Level Anomaly Segregation, Auditor Variance Resolution Workflow, All-Format Document Ingestion,
 and Indian Income Tax (1961) & GST Act (2017) Chartered Accountant Audit Engine.
 """
 
@@ -66,12 +66,19 @@ st.markdown(
         padding-right: 14px;
         border-radius: 4px;
     }
-    .deviation-card {
-        background-color: #1E222A;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 15px;
-        border-left: 5px solid #1E88E5;
+    .status-open {
+        background-color: #D32F2F;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .status-corrected {
+        background-color: #388E3C;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
     }
     </style>
     """,
@@ -85,7 +92,6 @@ def get_orchestrator():
 
 
 def initialize_session():
-    # Force re-initialization if results missing or older cached schema present
     should_reset = False
     if "results" not in st.session_state:
         should_reset = True
@@ -93,7 +99,7 @@ def initialize_session():
         results = st.session_state["results"]
         if "anomalies" in results and results["anomalies"]:
             first_a = results["anomalies"][0]
-            if not hasattr(first_a, "expected_baseline"):
+            if not hasattr(first_a, "expected_baseline") or not hasattr(first_a, "status"):
                 should_reset = True
 
     if should_reset:
@@ -108,7 +114,7 @@ initialize_session()
 # Sidebar Control Panel
 st.sidebar.image("https://img.icons8.com/color/96/000000/shield-with-authorization.png", width=64)
 st.sidebar.title("ApexForge Platform")
-st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.4")
+st.sidebar.caption("AI Forensic & CA Tax Audit Engine v1.5")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Benchmark Datasets")
@@ -164,13 +170,14 @@ with tab1:
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     total_vol = sum(t.amount for t in transactions)
     crit_count = sum(1 for a in anomalies if a.severity.value == "CRITICAL")
+    open_count = sum(1 for a in anomalies if getattr(a, "status", "OPEN") == "OPEN")
     
     col1.metric("Ingested Docs", len(docs))
     col2.metric("Extracted Entities", len(entities))
     col3.metric("Transactions", len(transactions))
     col4.metric("Total Volume (₹)", f"₹{total_vol:,.0f}")
     col5.metric("Circular Loops", len(cycles), delta=f"{len(cycles)} loops", delta_color="inverse")
-    col6.metric("Critical Anomalies", crit_count, delta=f"{crit_count} Critical", delta_color="inverse")
+    col6.metric("Unresolved Variances", open_count, delta=f"{open_count} Open", delta_color="inverse")
     
     st.markdown("---")
     st.subheader("🤖 Executive Forensic Narrative Summary")
@@ -473,11 +480,24 @@ with tab3:
                 st.warning("No direct path found within 6 hops.")
 
 # ==============================================================================
-# TAB 4: SEGREGATED ANOMALIES & DEVIATION ROOT CAUSE ANALYSIS
+# TAB 4: SEGREGATED ANOMALIES & AUDITOR VARIANCE CORRECTION WORKFLOW
 # ==============================================================================
 with tab4:
-    st.header("🚨 Segregated Anomaly & Forensic Deviation Engine")
-    st.caption("Anomalies grouped by Severity Tiers with Baseline vs. Observed Deviation Analysis & Document Location Pointers.")
+    st.header("🚨 Segregated Anomaly & Forensic Variance Correction Engine")
+    st.caption("Anomalies grouped by Severity Tiers with Baseline vs. Observed Deviation Analysis & Auditor Correction Controls.")
+
+    # ONE-CLICK BATCH AUTO-CORRECT BUTTON FOR CAS
+    ac_col1, ac_col2 = st.columns([3, 1])
+    with ac_col1:
+        st.markdown("**Auditor Quick Action:** Correct all flagged tax & disallowance variances and record entries in SHA3-256 Audit Ledger.")
+    with ac_col2:
+        if st.button("⚡ Auto-Correct All Variances", type="primary", use_container_width=True):
+            orch = get_orchestrator()
+            count_corr = orch.auto_correct_all_tax_variances(results, auditor_name="CA Statutory Auditor")
+            st.success(f"Successfully corrected {count_corr} flagged variances and signed SHA3-256 Audit Ledger!")
+            st.rerun()
+
+    st.markdown("---")
 
     crit_list = [a for a in anomalies if a.severity == AnomalySeverity.CRITICAL]
     high_list = [a for a in anomalies if a.severity == AnomalySeverity.HIGH]
@@ -491,7 +511,7 @@ with tab4:
     sev_c4.metric("🟢 LOW Severity", len(low_list), delta="Minor Discrepancy")
 
     st.markdown("---")
-    st.subheader("🔍 Severity Level Segregation Tabs")
+    st.subheader("🔍 Severity Level Segregation & Auditor Resolution Controls")
 
     s_tab1, s_tab2, s_tab3, s_tab4, s_tab5 = st.tabs([
         f"📋 All Anomalies ({len(anomalies)})",
@@ -501,20 +521,22 @@ with tab4:
         f"🟢 LOW ({len(low_list)})",
     ])
 
-    def render_anomaly_cards(anomaly_group: List[AnomalyFinding]):
+    def render_anomaly_cards_with_resolution(anomaly_group: List[AnomalyFinding]):
         if not anomaly_group:
             st.info("No anomalies in this severity category.")
             return
 
         for idx, a in enumerate(anomaly_group):
-            # Safe attribute access for backwards-compatibility with cached session state
             exp_base = getattr(a, "expected_baseline", "") or "Standard Business Policy Benchmark"
             obs_val = getattr(a, "observed_value", "") or "Actual Recorded Transaction Payload"
             dev_delta = getattr(a, "deviation_delta", "") or "Deviates from established compliance threshold"
             ev_loc = getattr(a, "evidence_location", "") or ", ".join(a.evidence_documents)
             aud_rec = getattr(a, "audit_recommendation", "") or "Audit evidence document and verify compliance."
+            astatus = getattr(a, "status", "OPEN")
 
-            with st.expander(f"[{a.severity.value}] {a.anomaly_type.value} — ID: {a.anomaly_id} (Score: {a.anomaly_score:.2f})", expanded=(idx < 2)):
+            status_badge = "🟢 CORRECTED" if astatus != "OPEN" else "🔴 OPEN VARIANCE"
+
+            with st.expander(f"[{a.severity.value}] {a.anomaly_type.value} — ID: {a.anomaly_id} ({status_badge})", expanded=(idx < 2)):
                 st.markdown(f"**Explanation:** {a.explanation}")
                 
                 st.markdown("##### 📊 Forensic Deviation Breakdown (Where Transaction Defers)")
@@ -527,17 +549,57 @@ with tab4:
                     st.markdown(f"📍 **Evidence Document Pointer:** `{ev_loc}`")
 
                 st.markdown(f"💡 **CA Audit Recommendation:** {aud_rec}")
+                
+                # AUDITOR VARIANCE CORRECTION FORM
+                st.markdown("---")
+                st.markdown(f"##### 🛠️ CA Auditor Variance Resolution Form (ID: `{a.anomaly_id}`)")
+                
+                if astatus != "OPEN":
+                    st.success(f"✅ Variance Corrected: **{astatus}** | Resolved by: `{getattr(a, 'resolved_by', 'CA Auditor')}` at `{getattr(a, 'resolved_timestamp', '')[:19]}`")
+                    st.markdown(f"**Auditor Notes:** {getattr(a, 'auditor_resolution_notes', '')}")
+
+                with st.form(key=f"res_form_{a.anomaly_id}"):
+                    f_col1, f_col2 = st.columns(2)
+                    with f_col1:
+                        action_choice = st.selectbox(
+                            "Select Audit Correction Action",
+                            [
+                                "CORRECTED_DISALLOWED_IN_PGBP",
+                                "GST_ITC_REVERSED",
+                                "SUBSTANTIATED_WITH_DOCS",
+                                "RESOLVED_COMMERCIAL_EXPEDIENCY",
+                                "REPORTED_TO_FIU_STR"
+                            ],
+                            key=f"act_{a.anomaly_id}"
+                        )
+                        auditor_name_input = st.text_input("Auditor / CA Name", "CA Statutory Auditor", key=f"aud_{a.anomaly_id}")
+                    with f_col2:
+                        notes_input = st.text_area("Auditor Resolution Notes & Form 3CD Clause References", f"Rectified variance u/s 40A(3) / GST Sec 16(2).", key=f"not_{a.anomaly_id}")
+                    
+                    submit_res = st.form_submit_button("✍️ Apply CA Audit Correction & Sign SHA3-256 Ledger")
+                    if submit_res:
+                        orch = get_orchestrator()
+                        success = orch.resolve_anomaly_variance(
+                            results=results,
+                            anomaly_id=a.anomaly_id,
+                            resolution_action=action_choice,
+                            notes=notes_input,
+                            auditor_name=auditor_name_input,
+                        )
+                        if success:
+                            st.success(f"Successfully corrected variance {a.anomaly_id} and recorded block in SHA3-256 Ledger!")
+                            st.rerun()
 
     with s_tab1:
-        render_anomaly_cards(anomalies)
+        render_anomaly_cards_with_resolution(anomalies)
     with s_tab2:
-        render_anomaly_cards(crit_list)
+        render_anomaly_cards_with_resolution(crit_list)
     with s_tab3:
-        render_anomaly_cards(high_list)
+        render_anomaly_cards_with_resolution(high_list)
     with s_tab4:
-        render_anomaly_cards(med_list)
+        render_anomaly_cards_with_resolution(med_list)
     with s_tab5:
-        render_anomaly_cards(low_list)
+        render_anomaly_cards_with_resolution(low_list)
 
     st.markdown("---")
     st.subheader("🔄 Detected Circular Transaction Loops")

@@ -158,6 +158,10 @@ class AnomalyFinding(BaseModel):
     deviation_delta: str = ""
     evidence_location: str = ""
     audit_recommendation: str = ""
+    status: str = "OPEN"  # OPEN, CORRECTED_DISALLOWED, ITC_REVERSED, SUBSTANTIATED, RESOLVED_COMMERCIAL
+    auditor_resolution_notes: str = ""
+    resolved_by: str = ""
+    resolved_timestamp: str = ""
     supporting_features: Dict[str, Any] = Field(default_factory=dict)
     evidence_documents: List[str] = Field(default_factory=list)
 

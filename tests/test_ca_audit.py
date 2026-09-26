@@ -1,12 +1,13 @@
 import pytest
 from apexforge.ca_audit.ca_tax_engine import IndianCATaxAuditEngine
+from apexforge.agents.orchestrator import ForensicOrchestrator
+from apexforge.generator.synthetic_data import SyntheticDataGenerator
 from apexforge.models.data_models import Transaction, Entity, EntityType, TransactionCycle
 
 
 def test_indian_ca_tax_audit_engine():
     engine = IndianCATaxAuditEngine()
 
-    # Cash transaction > 20,000 (Sec 269SS violation)
     tx1 = Transaction(
         transaction_id="TX-CASH-1",
         sender_id="E1",
@@ -20,7 +21,6 @@ def test_indian_ca_tax_audit_engine():
         evidence_text="Cash payment made in hand",
     )
 
-    # Cash transaction > 10,000 for vendor expense (Sec 40A(3) disallowance)
     tx2 = Transaction(
         transaction_id="TX-CASH-2",
         sender_id="E1",
@@ -53,8 +53,23 @@ def test_indian_ca_tax_audit_engine():
     assert results["summary_metrics"]["total_sec_269ss_penalty_exposure"] == 45000.0
     assert results["summary_metrics"]["total_gst_circular_itc_at_risk"] == 120000.0
 
-    # Test working paper markdown generation
     wp_md = engine.generate_ca_working_paper_md(results, "Test Assessee", "AY 2026-27")
     assert "Section 40A(3)" in wp_md
     assert "Section 269SS" in wp_md
     assert "Form 3CD" in wp_md
+
+
+def test_variance_correction_and_ledger_signing():
+    gen = SyntheticDataGenerator(seed=42)
+    docs = gen.generate_benchmark_dataset()
+    orch = ForensicOrchestrator()
+    results = orch.run_investigation_pipeline(docs)
+
+    # Test auto-correcting all tax variances
+    corrected_count = orch.auto_correct_all_tax_variances(results, auditor_name="CA Test Auditor")
+    assert corrected_count > 0
+
+    # Verify chain integrity after signed variance corrections
+    is_valid, count, _, msg = results["ledger"].verify_chain_integrity()
+    assert is_valid is True
+    assert count > 7

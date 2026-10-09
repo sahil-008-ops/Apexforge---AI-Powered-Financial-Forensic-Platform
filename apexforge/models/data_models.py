@@ -197,3 +197,148 @@ class ForensicNarrativeSection(BaseModel):
     hypotheses: List[str] = Field(default_factory=list)
     policy_violations: List[str] = Field(default_factory=list)
     unresolved_questions: List[str] = Field(default_factory=list)
+
+
+# --- MODULE A: AUDIT TRAIL MODELS ---
+class AuditReviewStatus(str, Enum):
+    OPEN = "OPEN"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    FALSE_POSITIVE = "FALSE_POSITIVE"
+    RESOLVED = "RESOLVED"
+
+
+class AuditEvent(BaseModel):
+    event_id: str
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    user_id: str = "CA_AUDITOR_01"
+    user_role: str = "Chartered Accountant / Forensic Auditor"
+    action: str
+    entity_type: str
+    entity_id: str
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    source: str = "System"
+    ai_model: str = "Gemini-Pro-Forensic"
+    confidence_score: float = 1.0
+    previous_hash: str = ""
+    current_hash: str = ""
+    reason: str = ""
+
+
+# --- MODULE B: AUTO LEDGER GENERATION MODELS ---
+class LedgerCategory(str, Enum):
+    REVENUE_SALES = "Revenue / Sales"
+    PURCHASE_EXPENSE = "Direct Purchase / Cost of Sales"
+    INDIRECT_EXPENSE = "Indirect Administrative Expense"
+    CURRENT_ASSET = "Current Asset / Bank / Cash"
+    NON_CURRENT_ASSET = "Fixed / Capital Asset"
+    CURRENT_LIABILITY = "Current Liability / Creditors"
+    CAPITAL_ACCOUNT = "Capital / Equity Account"
+    TAX_DUTIES = "TDS / GST Tax Liability"
+    SUSPENSE = "Unclassified / Suspense Account"
+
+
+class AutoLedgerEntry(BaseModel):
+    entry_id: str
+    transaction_id: str
+    date: str
+    description: str
+    debit_account: str
+    credit_account: str
+    amount: float
+    currency: str = "INR"
+    category: LedgerCategory
+    vendor_customer: str = ""
+    gst_rate: float = 0.0
+    itc_eligible: bool = True
+    tds_section: str = ""
+    confidence_score: float = 0.95
+    source_document: str = ""
+    status: AuditReviewStatus = AuditReviewStatus.OPEN
+    ca_notes: str = ""
+
+
+# --- MODULE C: BANK RECONCILIATION MODELS ---
+class ReconciliationMatchStatus(str, Enum):
+    MATCHED = "MATCHED"
+    UNMATCHED_BANK = "UNMATCHED_BANK_STATEMENT"
+    UNMATCHED_LEDGER = "UNMATCHED_BOOKS_LEDGER"
+    DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
+    AMOUNT_MISMATCH = "AMOUNT_MISMATCH"
+    DATE_MISMATCH = "TIMING_DATE_MISMATCH"
+    BANK_CHARGES = "UNRECORDED_BANK_CHARGE"
+    SUSPICIOUS_ROUTING = "SUSPICIOUS_CIRCULAR_ROUTING"
+
+
+class BankReconciliationLine(BaseModel):
+    line_id: str
+    bank_date: str
+    ledger_date: str = ""
+    bank_description: str
+    ledger_description: str = ""
+    bank_amount: float
+    ledger_amount: float = 0.0
+    variance: float = 0.0
+    status: ReconciliationMatchStatus
+    source_bank_doc: str = ""
+    source_ledger_ref: str = ""
+    recommendation: str = ""
+
+
+# --- MODULE D: AIS & FORM 26AS RECONCILIATION MODELS ---
+class AISRecord(BaseModel):
+    record_id: str
+    pan: str
+    financial_year: str = "FY 2024-25"
+    info_code: str  # e.g., SFT-005, SFT-014, TDS-194C
+    info_description: str
+    source_reporter: str  # e.g. HDFC Bank, Infosys Ltd
+    reported_amount: float
+    book_recorded_amount: float = 0.0
+    variance_amount: float = 0.0
+    disallowance_section: str = ""  # e.g. Sec 40A(3), Sec 68, Sec 194C
+    compliance_risk: str = "NORMAL"  # HIGH_RISK, MEDIUM_RISK, NORMAL
+    status: AuditReviewStatus = AuditReviewStatus.OPEN
+    evidence_ref: str = ""
+
+
+# --- MODULE F: UNIFIED MULTI-WAY RECONCILIATION MATRIX ---
+class UnifiedReconciliationMatrix(BaseModel):
+    matrix_id: str
+    transaction_id: str
+    counterparty: str
+    amount: float
+    bank_reconciled: bool
+    ledger_posted: bool
+    ais_matched: bool
+    invoice_backed: bool
+    graph_cycle_detected: bool
+    forensic_risk_score: float
+    unified_status: str
+    audit_action: str
+
+
+# --- MODULE I: AUDIT WORKING PAPERS ---
+class WorkingPaperSchedule(BaseModel):
+    schedule_id: str
+    schedule_name: str
+    statutory_clause: str  # Form 3CD Clause 21(b), Clause 31(a), etc.
+    system_findings_summary: str
+    ca_auditor_observations: str
+    ca_auditor_conclusion: str
+    audit_status: AuditReviewStatus = AuditReviewStatus.OPEN
+
+
+class AuditWorkingPaper(BaseModel):
+    paper_id: str
+    financial_year: str = "FY 2024-25"
+    entity_name: str = "Apex Global Corp India Pvt Ltd"
+    generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    sa240_fraud_findings: List[str] = Field(default_factory=list)
+    sa250_statutory_compliance: List[str] = Field(default_factory=list)
+    schedules: List[WorkingPaperSchedule] = Field(default_factory=list)
+    tamper_hash_chain_status: str = "SHA3-256 VERIFIED"
+    auditor_signoff_notes: str = ""
+

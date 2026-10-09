@@ -34,6 +34,13 @@ from apexforge.agents.orchestrator import ForensicOrchestrator
 from apexforge.graph.graph_store import TransactionGraphStore
 from apexforge.rag.policy_store import RAGPolicyStore
 from apexforge.ca_audit.ca_tax_engine import IndianCATaxAuditEngine
+from apexforge.ledger_generation.auto_ledger import AutoLedgerGenerator
+from apexforge.reconciliation.bank_reconciliation import BankReconciliationEngine
+from apexforge.reconciliation.ais_reconciliation import AISReconciliationEngine
+from apexforge.reconciliation.unified_reconciliation import UnifiedReconciliationEngine
+from apexforge.copilot.ca_copilot import CAInvestigationCopilot
+from apexforge.ca_audit.paper_generator import CAReviewWorkflow, AuditWorkingPaperGenerator
+from apexforge.models.data_models import AuditReviewStatus
 
 
 st.set_page_config(
@@ -141,14 +148,20 @@ st.markdown('<div class="main-header">🛡️ APEXFORGE</div>', unsafe_allow_htm
 st.markdown('<div class="sub-header">AI-Powered Forensic Financial Auditing, Transaction Tracing & Indian CA Tax Audit Platform</div>', unsafe_allow_html=True)
 
 # Navigation Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs([
     "📊 Executive Summary",
     "📁 Multi-File Ingestion",
     "🕸️ Clean Transaction Graph",
     "🚨 Segregated Anomalies & Deviations",
     "🇮🇳 CA Tax Audit (Income Tax & GST)",
     "📜 Policy RAG Verification",
-    "🔐 Audit Ledger & Report",
+    "📒 AI Auto Ledger",
+    "🏦 Bank Reconciliation",
+    "📜 AIS & 26AS Reconciliation",
+    "🔍 360° Multi-Way Matrix",
+    "🤖 CA Forensic Copilot",
+    "📁 ICAI Audit Working Papers",
+    "🔐 SHA3-256 Audit Trail",
 ])
 
 # ==============================================================================
@@ -695,24 +708,259 @@ with tab6:
     st.dataframe(pd.DataFrame(policy_table), use_container_width=True)
 
 # ==============================================================================
-# TAB 7: AUDIT LEDGER & REPORT
+# TAB 7: AI AUTOMATIC LEDGER GENERATION (MODULE B)
 # ==============================================================================
 with tab7:
-    st.header("Forensic Audit Ledger & Report")
-    
-    col_l1, col_l2 = st.columns([2, 1])
-    
-    with col_l1:
-        st.subheader("🔐 SHA3-256 Tamper-Evident Audit Ledger")
-        
-        is_valid, count, tampered_idx, msg = ledger.verify_chain_integrity()
-        if is_valid:
-            st.success(f"✅ LEDGER INTEGRITY VERIFIED: {msg}")
-        else:
-            st.error(f"❌ TAMPER DETECTED: {msg}")
+    st.header("📒 AI Automatic Double-Entry Ledger Generation Engine")
+    st.caption("Classifies bank statements & invoices into Double-Entry Accounting Ledgers with Indian GST & TDS mappings.")
 
-        ledger_entries = ledger.export_ledger_dict()
-        st.dataframe(pd.DataFrame(ledger_entries), use_container_width=True)
+    auto_ledger_gen = AutoLedgerGenerator()
+    generated_ledgers = auto_ledger_gen.generate_ledger_entries(transactions)
+
+    cat_summary = auto_ledger_gen.get_summary_by_category()
+    sc1, sc2, sc3, sc4, sc5 = st.columns(5)
+    sc1.metric("Total Ledger Entries", len(generated_ledgers))
+    sc2.metric("Sales / Revenue (₹)", f"₹{cat_summary.get('Revenue / Sales', 0.0):,.2f}")
+    sc3.metric("Purchases (₹)", f"₹{cat_summary.get('Direct Purchase / Cost of Sales', 0.0):,.2f}")
+    sc4.metric("Indirect Expenses (₹)", f"₹{cat_summary.get('Indirect Administrative Expense', 0.0):,.2f}")
+    sc5.metric("Capital Assets (₹)", f"₹{cat_summary.get('Fixed / Capital Asset', 0.0):,.2f}")
+
+    st.markdown("---")
+    st.subheader("📋 Generated General Ledger Entries & Statutory Tax Mappings")
+
+    ledger_table_data = []
+    for entry in generated_ledgers:
+        ledger_table_data.append({
+            "Entry ID": entry.entry_id,
+            "Date": entry.date,
+            "Description": entry.description,
+            "Debit Account": entry.debit_account,
+            "Credit Account": entry.credit_account,
+            "Amount (₹)": f"₹{entry.amount:,.2f}",
+            "Category": entry.category.value,
+            "GST Rate": f"{entry.gst_rate}%",
+            "ITC Eligible": "YES" if entry.itc_eligible else "NO",
+            "TDS Section": entry.tds_section or "N/A",
+            "AI Confidence": f"{entry.confidence_score * 100:.0f}%",
+            "CA Status": entry.status.value,
+        })
+
+    st.dataframe(pd.DataFrame(ledger_table_data), use_container_width=True)
+
+# ==============================================================================
+# TAB 8: BANK RECONCILIATION ENGINE (MODULE C)
+# ==============================================================================
+with tab8:
+    st.header("🏦 Bank Statement Reconciliation Engine")
+    st.caption("Matches Bank Statement line items against Books of Accounts (Ledgers), identifying unrecorded charges & timing variances.")
+
+    bank_engine = BankReconciliationEngine()
+    reconciled_lines = bank_engine.reconcile(transactions, generated_ledgers)
+    rec_summary = bank_engine.get_reconciliation_summary()
+
+    rc1, rc2, rc3, rc4, rc5 = st.columns(5)
+    rc1.metric("Total Statement Lines", rec_summary["total_line_items"])
+    rc2.metric("Fully Matched", rec_summary["matched_count"], delta=f"{rec_summary['matched_count']} Matched")
+    rc3.metric("Unmatched Bank Lines", rec_summary["unmatched_bank_count"], delta="Needs Posting", delta_color="inverse")
+    rc4.metric("Unmatched Books Entries", rec_summary["unmatched_ledger_count"], delta="Unpresented Cheques", delta_color="off")
+    rc5.metric("Reconciled Amount (₹)", f"₹{rec_summary['reconciled_amount_inr']:,.2f}")
+
+    st.markdown("---")
+    st.subheader("🔍 Bank Reconciliation Breakdown & Audit Recommendations")
+
+    rec_table_data = []
+    for line in reconciled_lines:
+        rec_table_data.append({
+            "Line ID": line.line_id,
+            "Bank Date": line.bank_date or "-",
+            "Ledger Date": line.ledger_date or "-",
+            "Bank Statement Description": line.bank_description,
+            "Books Ledger Description": line.ledger_description or "-",
+            "Bank Amount (₹)": f"₹{line.bank_amount:,.2f}",
+            "Ledger Amount (₹)": f"₹{line.ledger_amount:,.2f}",
+            "Variance (₹)": f"₹{line.variance:,.2f}",
+            "Reconciliation Status": line.status.value,
+            "CA Recommendation": line.recommendation,
+        })
+
+    st.dataframe(pd.DataFrame(rec_table_data), use_container_width=True)
+
+# ==============================================================================
+# TAB 9: AIS & FORM 26AS TAX RECONCILIATION (MODULE D)
+# ==============================================================================
+with tab9:
+    st.header("📜 Income Tax AIS & Form 26AS Reconciliation Engine")
+    st.caption("Reconciles Income Tax AIS SFT codes & 26AS TDS credits against Books & Bank Statements to prevent Sec 68 / 115BBE assessments.")
+
+    ais_engine = AISReconciliationEngine(pan="AAACA1234F", financial_year="FY 2024-25")
+    ais_records = ais_engine.reconcile_with_books(generated_ledgers, transactions)
+    ais_summary = ais_engine.get_ais_summary()
+
+    ac1, ac2, ac3, ac4 = st.columns(4)
+    ac1.metric("Assessee PAN", ais_summary["pan"])
+    ac2.metric("Total AIS Reported (₹)", f"₹{ais_summary['total_reported_amount_inr']:,.2f}")
+    ac3.metric("Books Recorded (₹)", f"₹{ais_summary['total_book_recorded_inr']:,.2f}")
+    ac4.metric("Unreported Income Discrepancy", f"₹{ais_summary['unreported_income_variance_inr']:,.2f}", delta=f"{ais_summary['high_risk_discrepancies']} High Risk", delta_color="inverse")
+
+    st.markdown("---")
+    st.subheader("📌 AIS SFT Information Codes & Statutory Mismatch Analysis")
+
+    ais_table_data = []
+    for ar in ais_records:
+        ais_table_data.append({
+            "Record ID": ar.record_id,
+            "Info Code": ar.info_code,
+            "Description": ar.info_description,
+            "Source Reporter": ar.source_reporter,
+            "AIS Reported (₹)": f"₹{ar.reported_amount:,.2f}",
+            "Book Amount (₹)": f"₹{ar.book_recorded_amount:,.2f}",
+            "Variance (₹)": f"₹{ar.variance_amount:,.2f}",
+            "Statutory Disallowance Section": ar.disallowance_section,
+            "Compliance Risk": ar.compliance_risk,
+        })
+
+    st.dataframe(pd.DataFrame(ais_table_data), use_container_width=True)
+
+# ==============================================================================
+# TAB 10: 360° UNIFIED MULTI-WAY RECONCILIATION MATRIX (MODULE F)
+# ==============================================================================
+with tab10:
+    st.header("🔍 360° Unified Multi-Way Forensic Reconciliation Matrix")
+    st.caption("Cross-verifies Bank Statement ↔ Books ↔ AIS ↔ Invoices ↔ Graph Cycles into a single forensic compliance view.")
+
+    unified_engine = UnifiedReconciliationEngine()
+    matrix = unified_engine.build_unified_matrix(transactions, generated_ledgers, reconciled_lines, ais_records, cycles)
+    matrix_summary = unified_engine.get_unified_summary()
+
+    mc1, mc2, mc3, mc4 = st.columns(4)
+    mc1.metric("Total Evaluated Transactions", matrix_summary["total_matrix_entries"])
+    mc2.metric("Fully Reconciled & Compliant", matrix_summary["reconciled_fully"])
+    mc3.metric("Critical Forensic Flags", matrix_summary["critical_forensic_flags"], delta_color="inverse")
+    mc4.metric("Total Flagged Exposure (₹)", f"₹{matrix_summary['total_flagged_amount_inr']:,.2f}")
+
+    st.markdown("---")
+    st.subheader("📊 5-Dimension Compliance Matrix")
+
+    matrix_table = []
+    for m in matrix:
+        matrix_table.append({
+            "Matrix ID": m.matrix_id,
+            "Counterparty": m.counterparty,
+            "Amount (₹)": f"₹{m.amount:,.2f}",
+            "Bank Matched": "✅" if m.bank_reconciled else "❌",
+            "Ledger Posted": "✅" if m.ledger_posted else "❌",
+            "AIS Matched": "✅" if m.ais_matched else "❌",
+            "Invoice Backed": "✅" if m.invoice_backed else "❌",
+            "Graph Cycle": "🚨 YES" if m.graph_cycle_detected else "✅ NO",
+            "Risk Score": f"{m.forensic_risk_score * 100:.0f}%",
+            "Unified Status": m.unified_status,
+            "CA Audit Action": m.audit_action,
+        })
+
+    st.dataframe(pd.DataFrame(matrix_table), use_container_width=True)
+
+# ==============================================================================
+# TAB 11: CA FORENSIC INVESTIGATION COPILOT (MODULE G)
+# ==============================================================================
+with tab11:
+    st.header("🤖 CA Forensic Investigation Copilot")
+    st.caption("Evidence-grounded natural language query assistant for Indian Income Tax, CGST Law, and ICAI Auditing Standards.")
+
+    copilot = CAInvestigationCopilot()
+
+    st.markdown("#### 💡 Quick Statutory Query Presets")
+    qp1, qp2, qp3 = st.columns(3)
+    preset_query = ""
+    if qp1.button("📜 Explain CGST Sec 16(2) ITC Circular Disallowance", use_container_width=True):
+        preset_query = "Explain CGST Sec 16(2) ITC disallowance for circular trading"
+    if qp2.button("💵 Check Cash Expense Limits u/s 40A(3) & 269SS", use_container_width=True):
+        preset_query = "What are the rules for cash payments u/s 40A(3) and loans u/s 269SS?"
+    if qp3.button("📊 Investigate AIS Unreported Income u/s 68", use_container_width=True):
+        preset_query = "Tell me about AIS unreported income u/s 68 and Sec 115BBE"
+
+    query_input = st.text_input("Enter your forensic audit query:", value=preset_query or "Explain CGST Sec 16(2) ITC disallowance for circular trading")
+
+    if query_input:
+        with st.spinner("Analyzing statutory evidence & searching policy store..."):
+            answer_dict = copilot.query(query_input, anomalies=anomalies, cycles=cycles, ais_records=ais_records)
+
+            st.markdown(answer_dict["answer"])
+
+            st.markdown("---")
+            st.subheader("📚 Statutory Citations & Evidence Sources")
+            for cit in answer_dict["policy_citations"]:
+                st.info(f"📌 {cit}")
+            for ev in answer_dict["evidence_sources"]:
+                st.caption(f"📍 Document Reference: `{ev}`")
+
+# ==============================================================================
+# TAB 12: ICAI AUDIT WORKING PAPERS (MODULE I & H)
+# ==============================================================================
+with tab12:
+    st.header("📁 ICAI Audit Working Papers (SA 240 / SA 250 / Form 3CD)")
+    st.caption("Generates ICAI SA 240 (Fraud Risk Assessment) & SA 250 (Law Compliance) audit working papers with CA review controls.")
+
+    wp_gen = AuditWorkingPaperGenerator(ledger=ledger)
+    working_paper = wp_gen.generate_working_paper(anomalies)
+
+    wpc1, wpc2, wpc3 = st.columns(3)
+    wpc1.metric("Working Paper ID", working_paper.paper_id)
+    wpc2.metric("Financial Year", working_paper.financial_year)
+    wpc3.metric("Audit Ledger Verification", working_paper.tamper_hash_chain_status)
+
+    st.markdown("---")
+    st.subheader("🛡️ ICAI SA 240: Fraud Risk Audit Findings")
+    for f in working_paper.sa240_fraud_findings:
+        st.error(f)
+
+    st.markdown("---")
+    st.subheader("⚖️ ICAI SA 250: Statutory Laws & Regulations Compliance")
+    for s in working_paper.sa250_statutory_compliance:
+        st.warning(s)
+
+    st.markdown("---")
+    st.subheader("📊 Tax Audit Working Paper Schedules (Form 3CD & CGST Act)")
+    for sch in working_paper.schedules:
+        with st.expander(f"📍 [{sch.statutory_clause}] {sch.schedule_name}"):
+            st.markdown(f"**🤖 System Detection:** {sch.system_findings_summary}")
+            st.markdown(f"**🔍 CA Auditor Observation:** {sch.ca_auditor_observations}")
+            st.markdown(f"**💡 CA Final Audit Conclusion:** `{sch.ca_auditor_conclusion}`")
+
+    st.markdown("---")
+    wp_md = wp_gen.export_working_paper_markdown(working_paper)
+    st.download_button(
+        label="📥 Download Official ICAI SA 240/250 Audit Working Paper (.MD)",
+        data=wp_md,
+        file_name=f"ICAI_Audit_Working_Paper_{working_paper.paper_id}.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
+
+# ==============================================================================
+# TAB 13: SHA3-256 TAMPER-EVIDENT AUDIT TRAIL (MODULE A)
+# ==============================================================================
+with tab13:
+    st.header("🔐 Tamper-Evident SHA3-256 Audit Ledger & Event Trail")
+    st.caption("Append-only court-oriented ledger capturing all system events, AI determinations, and manual CA corrections with cryptographic hash chaining.")
+
+    col_l1, col_l2 = st.columns([2, 1])
+
+    with col_l1:
+        st.subheader("🔐 Ledger & Event Chain Verification")
+
+        is_valid_l, count_l, _, msg_l = ledger.verify_chain_integrity()
+        is_valid_e, count_e, _, msg_e = ledger.verify_event_chain_integrity()
+
+        if is_valid_l and is_valid_e:
+            st.success(f"✅ HASH CHAIN VERIFIED: Standard Ledger ({count_l} Entries) | Audit Event Ledger ({count_e} Events)")
+        else:
+            st.error(f"❌ TAMPER DETECTED: Ledger ({msg_l}) | Events ({msg_e})")
+
+        st.markdown("#### Standard Audit Ledger Blocks")
+        st.dataframe(pd.DataFrame(ledger.export_ledger_dict()), use_container_width=True)
+
+        st.markdown("#### Granular User & CA Action Events")
+        st.dataframe(pd.DataFrame(ledger.export_events_dict()), use_container_width=True)
 
     with col_l2:
         st.subheader("🧪 Tamper Demonstration")
@@ -729,7 +977,7 @@ with tab7:
 
     st.markdown("---")
     st.subheader("📄 Full Forensic Audit Investigation Report")
-    
+
     report_text = f"""# FORENSIC AUDIT INVESTIGATION REPORT
 **Generated by ApexForge CA Audit Platform**
 **Date:** 2026-03-26
@@ -755,3 +1003,4 @@ with tab7:
         file_name="ApexForge_Forensic_Investigation_Report.md",
         mime="text/markdown",
     )
+

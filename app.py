@@ -212,7 +212,95 @@ with tab1:
 with tab2:
     st.header("Universal Document Ingestion System")
     st.caption("Upload financial evidence files of ANY format (.PDF, .CSV, .XLSX, .DOCX, .TXT, .EML, .JSON, Images, .LOG, etc.)")
-    
+
+    st.markdown("### 📦 Download Sample Real-World Corporate CA Audit Files")
+    st.caption("Click any button below to download real corporate audit files directly to your device, then drag & drop them into the file uploader below.")
+
+    pkg_dir = Path(__file__).resolve().parent / "real_ca_audit_package"
+    d_col1, d_col2, d_col3, d_col4 = st.columns(4)
+
+    with d_col1:
+        hdfc_p = pkg_dir / "HDFC_Bank_Statement_FY2024-25.csv"
+        if hdfc_p.exists():
+            st.download_button(
+                "🏦 HDFC Bank Statement (.CSV)",
+                data=hdfc_p.read_bytes(),
+                file_name="HDFC_Bank_Statement_FY2024-25.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+
+    with d_col2:
+        tally_p = pkg_dir / "Tally_Prime_DayBook_FY2024-25.xlsx"
+        if tally_p.exists():
+            st.download_button(
+                "📒 Tally DayBook Ledger (.XLSX)",
+                data=tally_p.read_bytes(),
+                file_name="Tally_Prime_DayBook_FY2024-25.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+
+    with d_col3:
+        ais_p = pkg_dir / "IncomeTax_AIS_Form26AS_FY2024-25.json"
+        if ais_p.exists():
+            st.download_button(
+                "📜 Income Tax AIS (.JSON)",
+                data=ais_p.read_bytes(),
+                file_name="IncomeTax_AIS_Form26AS_FY2024-25.json",
+                mime="application/json",
+                use_container_width=True,
+            )
+
+    with d_col4:
+        gstr_p = pkg_dir / "GSTR_2B_Reconciliation_FY2024-25.xlsx"
+        if gstr_p.exists():
+            st.download_button(
+                "📊 GSTR-2B ITC Export (.XLSX)",
+                data=gstr_p.read_bytes(),
+                file_name="GSTR_2B_Reconciliation_FY2024-25.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+
+    d_col5, d_col6, d_col7, _ = st.columns(4)
+
+    with d_col5:
+        inv_p = pkg_dir / "GST_Tax_Invoice_INV-2024-1088.txt"
+        if inv_p.exists():
+            st.download_button(
+                "🧾 GST Tax Invoice (.TXT)",
+                data=inv_p.read_bytes(),
+                file_name="GST_Tax_Invoice_INV-2024-1088.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+
+    with d_col6:
+        f3cd_p = pkg_dir / "Form_3CD_Tax_Audit_Annexures_FY2024-25.xlsx"
+        if f3cd_p.exists():
+            st.download_button(
+                "📋 Form 3CD Annexures (.XLSX)",
+                data=f3cd_p.read_bytes(),
+                file_name="Form_3CD_Tax_Audit_Annexures_FY2024-25.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+
+    with d_col7:
+        eml_p = Path(__file__).resolve().parent / "sample_data" / "audit_evidence_email.eml"
+        if eml_p.exists():
+            st.download_button(
+                "📧 Audit Evidence Email (.EML)",
+                data=eml_p.read_bytes(),
+                file_name="audit_evidence_email.eml",
+                mime="message/rfc822",
+                use_container_width=True,
+            )
+
+    st.markdown("---")
+    st.markdown("### 📥 Drag & Drop Files to Ingest")
+
     uploaded_files = st.file_uploader(
         "Upload Financial Evidence Files (Any File Extension Supported)",
         type=None,

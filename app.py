@@ -392,79 +392,129 @@ with tab3:
             st.error(f"Pyvis rendering error: {e}. Falling back to Plotly engine.")
 
     else:
-        k_factor = 3.5 * (node_spacing / 5.0) / (np.sqrt(max(1, g_sub.number_of_nodes())))
-        pos = nx.spring_layout(g_sub, k=k_factor, iterations=120, seed=42)
+        # Kamada-Kawai Spacious Layout to eliminate node & label overlap
+        try:
+            pos = nx.kamada_kawai_layout(g_sub)
+        except Exception:
+            k_factor = 5.0 * (node_spacing / 5.0) / (np.sqrt(max(1, g_sub.number_of_nodes())))
+            pos = nx.spring_layout(g_sub, k=k_factor, iterations=200, seed=42)
 
+        # 1. Edge & Amount Midpoint Traces
         edge_x, edge_y = [], []
-        for edge in g_sub.edges():
-            if edge[0] in pos and edge[1] in pos:
-                x0, y0 = pos[edge[0]]
-                x1, y1 = pos[edge[1]]
+        mid_x, mid_y, mid_text = [], [], []
+
+        for u, v, d in g_sub.edges(data=True):
+            if u in pos and v in pos:
+                x0, y0 = pos[u]
+                x1, y1 = pos[v]
                 edge_x.extend([x0, x1, None])
                 edge_y.extend([y0, y1, None])
 
+                amt = d.get("amount", 0.0)
+                if amt > 0:
+                    mid_x.append((x0 + x1) / 2)
+                    mid_y.append((y0 + y1) / 2)
+                    mid_text.append(f"₹{amt:,.0f}")
+
         edge_trace = go.Scatter(
             x=edge_x, y=edge_y,
-            line=dict(width=1.2, color='#666666'),
+            line=dict(width=1.5, color='#4A5568'),
             hoverinfo='none',
-            mode='lines'
+            mode='lines',
+            showlegend=False
         )
 
-        node_x, node_y, node_hover, node_colors, node_sizes, node_labels = [], [], [], [], [], []
+        mid_edge_trace = go.Scatter(
+            x=mid_x, y=mid_y,
+            mode='text',
+            text=mid_text,
+            textposition="middle center",
+            textfont=dict(size=10, color="#CBD5E0"),
+            hoverinfo='none',
+            showlegend=False
+        )
+
+        # 2. Node Traces grouped by Type for Interactive Legend & Zero Overlap
         color_map = {
-            "Company": "#1E88E5",
-            "Account": "#D32F2F",
-            "Person": "#388E3C",
-            "Invoice": "#FBC02D",
-            "Transaction": "#F57C00",
-            "Document": "#7B1FA2",
+            "Company": "#3182CE",     # Clear Blue
+            "Account": "#E53E3E",     # Red
+            "Person": "#38A169",      # Green
+            "Invoice": "#DD6B20",     # Orange
+            "Transaction": "#D69E2E", # Yellow
+            "Document": "#805AD5",    # Purple
         }
 
+        show_labels = st.checkbox("Show Permanent Text Labels on Nodes (Uncheck for Ultra-Clean View)", value=False)
+
+        node_data_by_type = {}
         for node in g_sub.nodes():
             if node in pos:
                 x, y = pos[node]
-                node_x.append(x)
-                node_y.append(y)
                 lbl = g_sub.nodes[node].get("label", str(node))
                 ntype = g_sub.nodes[node].get("node_type", "Unknown")
-                
-                node_labels.append(lbl)
-                node_hover.append(f"<b>{lbl}</b><br>ID: {node}<br>Type: {ntype}")
-                node_colors.append(color_map.get(ntype, "#888888"))
-                node_sizes.append(24 if ntype == "Company" else 18)
 
-        show_labels = st.checkbox("Toggle Node Text Labels", value=True)
+                if ntype not in node_data_by_type:
+                    node_data_by_type[ntype] = {
+                        "x": [], "y": [], "hover": [], "labels": []
+                    }
 
-        node_trace = go.Scatter(
-            x=node_x, y=node_y,
-            mode='markers+text' if show_labels else 'markers',
-            hoverinfo='text',
-            text=node_labels,
-            textposition="top center",
-            textfont=dict(size=12, color="white"),
-            hovertext=node_hover,
-            marker=dict(
-                color=node_colors,
-                size=node_sizes,
-                line=dict(width=2, color="white")
+                node_data_by_type[ntype]["x"].append(x)
+                node_data_by_type[ntype]["y"].append(y)
+                node_data_by_type[ntype]["labels"].append(lbl)
+                node_data_by_type[ntype]["hover"].append(
+                    f"<b>{lbl}</b><br>ID: {node}<br>Type: {ntype}"
+                )
+
+        fig_data = [edge_trace, mid_edge_trace]
+
+        for ntype, data in node_data_by_type.items():
+            color = color_map.get(ntype, "#A0AEC0")
+            size = 28 if ntype == "Company" else 20
+
+            trace = go.Scatter(
+                x=data["x"], y=data["y"],
+                name=f"{ntype} Nodes",
+                mode='markers+text' if show_labels else 'markers',
+                text=data["labels"],
+                textposition="top center",
+                textfont=dict(size=11, color="#EDF2F7"),
+                hovertext=data["hover"],
+                hoverinfo='text',
+                marker=dict(
+                    color=color,
+                    size=size,
+                    line=dict(width=2, color="#FFFFFF")
+                )
             )
-        )
+            fig_data.append(trace)
 
         fig_net = go.Figure(
-            data=[edge_trace, node_trace],
+            data=fig_data,
             layout=go.Layout(
-                title='Clean Non-Overlapping Spacing Graph',
-                showlegend=False,
+                title=dict(
+                    text="🕸️ Spacious Entity-Transaction Network Matrix (Zero Overlap)",
+                    font=dict(size=18, color="#EDF2F7")
+                ),
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1,
+                    font=dict(color="#EDF2F7")
+                ),
                 hovermode='closest',
-                margin=dict(b=20, l=5, r=5, t=40),
+                margin=dict(b=20, l=10, r=10, t=60),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                 paper_bgcolor='#0E1117',
                 plot_bgcolor='#0E1117',
-                height=650,
+                height=680,
             )
         )
         st.plotly_chart(fig_net, use_container_width=True)
+
 
     # Path Tracing Tool
     st.markdown("---")

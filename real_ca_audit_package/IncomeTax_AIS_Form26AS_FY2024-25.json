@@ -1,0 +1,52 @@
+{
+  "assessee_details": {
+    "pan": "AAACA1234F",
+    "assessee_name": "APEX GLOBAL CORP INDIA PRIVATE LIMITED",
+    "financial_year": "2024-25",
+    "assessment_year": "2025-26"
+  },
+  "part_a_tds_tcs_summary": [
+    {
+      "tan": "DELV00192A",
+      "deductor_name": "Vanguard Trading India Pvt Ltd",
+      "section": "194C",
+      "amount_credited_inr": 13500000.0,
+      "total_tds_deducted_inr": 270000.0,
+      "total_tds_deposited_inr": 270000.0
+    },
+    {
+      "tan": "MUMH00241B",
+      "deductor_name": "HDFC Bank Limited",
+      "section": "194A",
+      "amount_credited_inr": 850000.0,
+      "total_tds_deducted_inr": 85000.0,
+      "total_tds_deposited_inr": 85000.0
+    },
+    {
+      "tan": "DELA00331C",
+      "deductor_name": "Apex Global Corp India Pvt Ltd",
+      "section": "194J",
+      "amount_credited_inr": 1200000.0,
+      "total_tds_deducted_inr": 120000.0,
+      "total_tds_deposited_inr": 120000.0
+    }
+  ],
+  "part_b_sft_high_value_transactions": [
+    {
+      "sft_code": "SFT-005",
+      "sft_description": "Purchase of Time Deposits (Fixed Deposit)",
+      "reporting_entity": "HDFC Bank Ltd",
+      "transaction_date": "2024-05-15",
+      "reported_amount_inr": 850000.0,
+      "book_status": "UNREPORTED_IN_BOOKS (Sec 68 Risk)"
+    },
+    {
+      "sft_code": "SFT-014",
+      "sft_description": "Sale of Listed Securities / Shares",
+      "reporting_entity": "National Stock Exchange India Ltd",
+      "transaction_date": "2024-08-20",
+      "reported_amount_inr": 4500000.0,
+      "book_status": "PARTIAL_MISMATCH"
+    }
+  ]
+}

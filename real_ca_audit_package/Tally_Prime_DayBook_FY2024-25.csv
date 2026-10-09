@@ -1,0 +1,11 @@
+Date,Vch_Type,Vch_No,Particulars,Debit_Ledger,Credit_Ledger,Amount,GSTIN,PAN,TDS_Sec,Narration
+01-04-2024,Payment,PAY-001,Shell Corp India Pvt Ltd,Purchase - Raw Materials,HDFC Bank A/c 991122,13500000.0,27AAACS1001A1Z1,AAACS1001A,Sec 194Q,Being raw material purchased vide Inv #INV-001
+02-04-2024,Receipt,REC-001,Vanguard Trading India Pvt Ltd,HDFC Bank A/c 991122,Sales Revenue Account,13500000.0,27AAACV1234F1Z1,AAACV1234F,N/A,Being sales revenue received vide RTGS
+03-04-2024,Payment,PAY-002,Horizon Holdings India Pvt Ltd,Consulting Charges Ledger,HDFC Bank A/c 991122,13500000.0,27AAACH9999K1Z5,AAACH9999K,Sec 194J,Being professional advisory paid vide NEFT
+05-04-2024,Receipt,REC-002,Ramesh Kumar (Director),HDFC Bank A/c 991122,Unsecured Cash Loan Account,45000.0,UNREGISTERED,ABCPK1234F,Sec 269SS,Being hand cash loan deposit taken in violation of Sec 269SS
+06-04-2024,Payment,PAY-003,Petty Cash Expenses,Office Expenses Ledger,Cash Account,9500.0,N/A,N/A,N/A,Being petty office stationery cash payment
+10-04-2024,Payment,PAY-004,Vanguard Trading India Pvt Ltd,Works Contract Expense,HDFC Bank A/c 991122,1250000.0,27AAACV1234F1Z1,AAACV1234F,Sec 194C,Being works contract charges paid @ 2% TDS
+12-04-2024,Payment,PAY-005,Apex Logistics India,Freight & Freight Charges,Cash Account,25000.0,07AAAAA1002A1Z5,AAAAA1002A,N/A,Being cash payment for freight in violation of Sec 40A(3)
+15-04-2024,Payment,PAY-006,Legal Firm & Co India,Legal & Professional Fees,HDFC Bank A/c 991122,150000.0,07AAAAA1003A1Z5,AAAAA1003A,Sec 194J,Being legal fees paid with 10% TDS deducted
+20-04-2024,Receipt,REC-003,Vanguard Trading India Pvt Ltd,HDFC Bank A/c 991122,Unexplained Cash Credit Ledger,45000000.0,27AAACV1234F1Z1,AAACV1234F,Sec 68,Unexplained cash credit entry in books u/s 68
+25-04-2024,Payment,PAY-007,Commercial Premises Pvt Ltd,Rent & Lease Expense,HDFC Bank A/c 991122,350000.0,27AAACC5555K1Z2,AAACC5555K,Sec 194I,Being office rent paid @ 10% TDS

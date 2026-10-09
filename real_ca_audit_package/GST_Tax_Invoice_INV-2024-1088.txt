@@ -1,0 +1,33 @@
+====================================================================================================
+                                      TAX INVOICE
+====================================================================================================
+Supplier: SHELL CORP INDIA PRIVATE LIMITED
+Address: Plot 45, Okhla Industrial Area Phase-III, New Delhi - 110020
+GSTIN: 27AAACS1001A1Z1 | PAN: AAACS1001A | State Code: 07 (Delhi)
+
+Invoice No: INV-2024-1088                                Date of Invoice: 01-04-2024
+Reverse Charge: NO                                       E-Way Bill No: 771122334455
+Vehicle No: DL-01-AB-1234                                Transport Mode: Road
+
+Billed To Customer:
+VANGUARD TRADING INDIA PRIVATE LIMITED
+Address: Plot 12, Cyber City Phase-II, Gurugram, Haryana - 122002
+GSTIN: 27AAACV1234F1Z1 | State Code: 06 (Haryana)
+
+----------------------------------------------------------------------------------------------------
+S.No | HSN/SAC | Item Description                 | Qty  | Unit Rate (INR) | Taxable Value (INR)
+----------------------------------------------------------------------------------------------------
+ 1.  | 8471    | Industrial Processing Equipment   |  1   | 1,35,00,000.00  |   1,35,00,000.00
+----------------------------------------------------------------------------------------------------
+                                                    Sub-Total Taxable Value: ₹1,35,00,000.00
+                                                    CGST @ 9.0%:             ₹12,15,000.00
+                                                    SGST @ 9.0%:             ₹12,15,000.00
+                                                    TOTAL INVOICE VALUE:     ₹1,59,30,000.00
+----------------------------------------------------------------------------------------------------
+Amount in Words: One Crore Fifty-Nine Lakhs Thirty Thousand Indian Rupees Only.
+Bank Details: State Bank of India A/C: 33009988112 | IFSC: SBIN0001004
+
+Terms: Subject to Delhi Jurisdiction. Input Tax Credit Subject to CGST Sec 16(2) Physical Supply.
+For SHELL CORP INDIA PRIVATE LIMITED
+[Authorised Signatory]
+====================================================================================================

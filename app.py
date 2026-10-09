@@ -128,7 +128,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Graph Visualization Engine")
 graph_engine_choice = st.sidebar.radio(
     "Graph Rendering Engine",
-    ["Interactive Pyvis Physics (Zero Overlap)", "Plotly Clean Spacing Matrix"],
+    ["Plotly Clean Spacing Matrix (Original Clean View)", "Interactive Pyvis Physics"],
     index=0
 )
 

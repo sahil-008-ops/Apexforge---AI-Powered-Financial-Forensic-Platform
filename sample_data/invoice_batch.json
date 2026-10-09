@@ -1,0 +1,36 @@
+[
+  {
+    "invoice_number": "INV-2026-901",
+    "date": "2026-03-10",
+    "vendor_name": "Tech Solutions India LLP",
+    "client_name": "Apex Global Corp India Pvt Ltd",
+    "gstin": "07AAAAA1001A1Z5",
+    "pan": "AAAAA1001A",
+    "total_amount_inr": 320000.0,
+    "items": [
+      {
+        "description": "Annual ERP Software Subscription",
+        "rate": 320000.0,
+        "tax_rate": 18.0
+      }
+    ],
+    "status": "APPROVED"
+  },
+  {
+    "invoice_number": "INV-2026-902",
+    "date": "2026-03-12",
+    "vendor_name": "Commercial Premises Pvt Ltd",
+    "client_name": "Apex Global Corp India Pvt Ltd",
+    "gstin": "27AAACC5555K1Z2",
+    "pan": "AAACC5555K",
+    "total_amount_inr": 350000.0,
+    "items": [
+      {
+        "description": "Office Building Monthly Lease",
+        "rate": 350000.0,
+        "tax_rate": 18.0
+      }
+    ],
+    "status": "PAID"
+  }
+]

@@ -1,0 +1,16 @@
+Date,Sender,Receiver,Amount,Currency,Reference
+2026-03-01,Shell Corp India Pvt Ltd,Vanguard Trading India Pvt Ltd,13500000.00,INR,NEFT Wire Transfer Ref #STR-1001 (CGST Sec 16(2) Loop)
+2026-03-02,Vanguard Trading India Pvt Ltd,Horizon Holdings India Pvt Ltd,13500000.00,INR,RTGS Payment Ref #STR-1002 (CGST Sec 16(2) Loop)
+2026-03-03,Horizon Holdings India Pvt Ltd,Shell Corp India Pvt Ltd,13500000.00,INR,Consulting Fee Ref #STR-1003 (CGST Sec 16(2) Loop)
+2026-03-04,Ramesh Kumar (Director),Offshore Trust Account ACCT-8891,45000.00,INR,Hand Cash Loan Deposit Sec 269SS
+2026-03-04,Ramesh Kumar (Director),Offshore Trust Account ACCT-8891,9500.00,INR,Tranche B Cash Deposit
+2026-03-05,Ramesh Kumar (Director),Offshore Trust Account ACCT-8891,9750.00,INR,Tranche C Cash Deposit
+2026-03-06,Apex Global Corp India Pvt Ltd,Vanguard Trading India Pvt Ltd,1250000.00,INR,Vendor Invoice #INV-2026-889 (Works Contract Sec 194C)
+2026-03-07,Apex Global Corp India Pvt Ltd,Vanguard Trading India Pvt Ltd,1250000.00,INR,Vendor Invoice #INV-2026-889 (Duplicate Entry)
+2026-03-08,Apex Global Corp India Pvt Ltd,Apex Logistics India,25000.00,INR,Courier Vendor Expense Cash Payment Sec 40A(3) Disallowance
+2026-03-09,Apex Global Corp India Pvt Ltd,Legal Firm & Co India,150000.00,INR,Legal Professional Fees Sec 194J
+2026-03-10,Vanguard Trading India Pvt Ltd,Apex Global Corp India Pvt Ltd,45000000.00,INR,Unbacked Bulk Transfer Sec 68 Unexplained Income
+2026-03-11,Apex Global Corp India Pvt Ltd,Commercial Premises Pvt Ltd,350000.00,INR,Office Rent Payment Sec 194I
+2026-03-12,Horizon Holdings India Pvt Ltd,Offshore Bank US98BANK0012,8800000.00,INR,Offshore Wire Transfer Sec 195
+2026-03-13,Priya Sharma,Apex Global Corp India Pvt Ltd,50000.00,INR,Expense Reimbursement
+2026-03-14,Tech Solutions India LLP,Vanguard Trading India Pvt Ltd,670000.00,INR,Services Rendered

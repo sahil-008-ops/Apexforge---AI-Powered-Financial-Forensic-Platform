@@ -1,0 +1,14 @@
+==================================================
+TAX INVOICE: INV-2026-889
+==================================================
+Date: 2026-03-01
+Issuer / Creator: Rajesh Sharma
+GSTIN: 27AAACV1234F1Z1 | PAN: AAACV1234F
+Vendor: Vanguard Trading India Pvt Ltd
+Billed To: Apex Global Corp India Pvt Ltd
+Total Amount: ₹12,50,000.00 INR
+CGST (9%): ₹1,12,500.00 | SGST (9%): ₹1,12,500.00
+Description: Professional Works Contract & Maintenance Services
+Payment Status: PAID via NEFT
+Notes: Approved by Rajesh Sharma on 2026-03-05 (Segregation of Duties Conflict)
+==================================================

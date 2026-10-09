@@ -1,0 +1,6 @@
+Date,Voucher_No,Particulars,Debit_Account,Credit_Account,Amount_INR,GSTIN,TDS_Section
+2026-03-01,VOUCH-101,Vanguard Trading India Pvt Ltd,Purchase Account,HDFC Bank A/C 9901,13500000.0,27AAACV1234F1Z1,Sec 194Q
+2026-03-06,VOUCH-102,Vanguard Trading India Pvt Ltd,Works Contract Expense,HDFC Bank A/C 9901,1250000.0,27AAACV1234F1Z1,Sec 194C
+2026-03-08,VOUCH-103,Apex Logistics India,Freight & Courier Charges,Cash Account,25000.0,07AAAAA1002A1Z5,N/A
+2026-03-09,VOUCH-104,Legal Firm & Co India,Legal & Professional Fees,HDFC Bank A/C 9901,150000.0,07AAAAA1003A1Z5,Sec 194J
+2026-03-11,VOUCH-105,Commercial Premises Pvt Ltd,Rent Expense,HDFC Bank A/C 9901,350000.0,27AAACC5555K1Z2,Sec 194I
